@@ -8,12 +8,15 @@
       <dt ng-repeat-start="(key, widget) in widgets">
         <a href="" ng-click="addWidget(key)">
           {{widget.title}}
-        </a>      
+        </a>
       </dt>
       <dd ng-repeat-end ng-if="widget.description">
         {{widget.description}}
       </dd>
     </dl>
+
+    <div ng-if="noWidgetsAvailable">No widgets available for selected placeholder</div>
+
   </div>
 </div>
 <div class="modal-footer">

@@ -58,9 +58,16 @@ angular.module('adf')
       }
     }
 
-    function copyWidgets(source, target) {
+    function widgetFilter(widget, column){
+      return !widget.minSize || column.width >= widget.minSize;
+    }
+
+    function copyWidgets(source, target, warnings) {
       if ( source.widgets && source.widgets.length > 0 ){
         var w = source.widgets.shift();
+        if(warnings.widgetExceedsMinSize === false && !widgetFilter(w, target)){
+          warnings.widgetExceedsMinSize = true;
+        }
         while (w){
           target.widgets.push(w);
           w = source.widgets.shift();
@@ -74,7 +81,7 @@ angular.module('adf')
     * @param array of columns
     * @param counter
     */
-    function fillStructure(root, columns, counter) {
+    function fillStructure(root, columns, counter, warnings) {
       counter = counter || 0;
 
       if (angular.isDefined(root.rows)) {
@@ -90,8 +97,11 @@ angular.module('adf')
             if (angular.isDefined(columns[counter])) {
               // do not add widgets to a column, which uses nested rows
               if (!angular.isDefined(column.rows)){
-                copyWidgets(columns[counter], column);
+                copyWidgets(columns[counter], column, warnings);
                 counter++;
+                if(warnings.oneWidgetPerColumn === false && column.widgets.length > 1){
+                  warnings.oneWidgetPerColumn = true;
+                }
               }
             }
 
@@ -124,14 +134,29 @@ angular.module('adf')
       return columns;
     }
 
-    function changeStructure(model, structure){
+    function changeStructure(model, structure, scope){
       var columns = readColumns(model);
       var counter = 0;
+      var warningMessages = [];
+      var warnings = {
+        widgetExceedsMinSize: false,
+        oneWidgetPerColumn: false
+      };
 
       model.rows = angular.copy(structure.rows);
 
       while ( counter < columns.length ){
-        counter = fillStructure(model, columns, counter);
+        counter = fillStructure(model, columns, counter, warnings);
+      }
+
+      if(warnings.widgetExceedsMinSize) {
+        warningMessages.push('At least one placeholder was too small for a widget!');
+      }
+      if(scope.singleWidgetMode && warnings.oneWidgetPerColumn) {
+        warningMessages.push('Multiple widgets were copied to a single placeholder!');
+      }
+      if(warningMessages.length) {
+        scope.$emit('changeStructureWarning', warningMessages);
       }
     }
 
@@ -180,9 +205,11 @@ angular.module('adf')
      * @param widget to add to model
      * @param name name of the dashboard
      */
-    function addNewWidgetToModel(model, widget, name){
+    function addNewWidgetToModel(model, widget, name, column){
       if (model){
-        var column = findFirstWidgetColumn(model);
+        if(!column) {
+          column = findFirstWidgetColumn(model);
+        }
         if (column){
           if (!column.widgets){
             column.widgets = [];
@@ -222,6 +249,32 @@ angular.module('adf')
       }, 200);
     }
 
+    function setExternalApiFunctions(scope) {
+      var api = {};
+
+      api.saveDashboard = function() {
+        return scope.saveDashboard();
+      };
+
+      api.manageEditMode = function() {
+        return scope.manageEditMode();
+      };
+
+      api.editDashboardDialog = function() {
+        return scope.editDashboardDialog();
+      };
+
+      api.cancelEditMode = function() {
+        return scope.cancelEditMode();
+      };
+
+      api.changeDashStructure = function(name, structure) {
+        scope.changeStructure(name, structure, scope);
+      };
+
+      scope.externalApi = api;
+    }
+
     return {
       replace: true,
       restrict: 'EA',
@@ -235,7 +288,10 @@ angular.module('adf')
         continuousEditMode: '=',
         maximizable: '@',
         adfModel: '=',
-        adfWidgetFilter: '='
+        adfWidgetFilter: '=',
+        singleWidgetMode: '@',
+        useNativeSortable: '@',
+        externalApi: '='
       },
       controller: function($scope){
         var model = {};
@@ -270,7 +326,7 @@ angular.module('adf')
                 model.title = 'Dashboard';
               }
               if (!model.titleTemplateUrl) {
-                model.titleTemplateUrl = adfTemplatePath + 'dashboard-title.html';
+                model.titleTemplateUrl = adfTemplatePath + 'dashboard-title-custom.html';
               }
               $scope.model = model;
             } else {
@@ -334,7 +390,7 @@ angular.module('adf')
           });
           $scope.changeStructure = function(name, structure){
             $log.info('change structure to ' + name);
-            changeStructure(model, structure);
+            changeStructure(model, structure, $scope);
           };
           editDashboardScope.closeDialog = function(){
             // copy the new title back to the model
@@ -346,14 +402,14 @@ angular.module('adf')
         };
 
         // add widget dialog
-        $scope.addWidgetDialog = function(){
+        $scope.addWidgetDialog = function(column){
           var addScope = $scope.$new();
           var model = $scope.model;
           var widgets;
           if (angular.isFunction(widgetFilter)){
             widgets = {};
             angular.forEach(dashboard.widgets, function(widget, type){
-              if (widgetFilter(widget, type, model)){
+              if (widgetFilter(widget, type, model, column)){
                 widgets[type] = widget;
               }
             });
@@ -361,6 +417,7 @@ angular.module('adf')
             widgets = dashboard.widgets;
           }
           addScope.widgets = widgets;
+          addScope.noWidgetsAvailable = angular.equals({}, widgets);
 
           var adfAddTemplatePath = adfTemplatePath + 'widget-add.html';
           if(model.addTemplateUrl) {
@@ -379,7 +436,7 @@ angular.module('adf')
               type: widget,
               config: createConfiguration(widget)
             };
-            addNewWidgetToModel(model, w, name);
+            addNewWidgetToModel(model, w, name, column);
             // close and destroy
             instance.close();
             addScope.$destroy();
@@ -397,6 +454,12 @@ angular.module('adf')
         };
 
         $scope.addNewWidgetToModel = addNewWidgetToModel;
+
+        $scope.$on('addWidgetDialog', function(event, column) {
+          $scope.addWidgetDialog(column);
+        });
+
+        setExternalApiFunctions($scope);
       },
       link: function ($scope, $element, $attr) {
         // pass options to scope
@@ -405,7 +468,9 @@ angular.module('adf')
           editable: true,
           enableConfirmDelete: stringToBoolean($attr.enableconfirmdelete),
           maximizable: stringToBoolean($attr.maximizable),
-          collapsible: stringToBoolean($attr.collapsible)
+          collapsible: stringToBoolean($attr.collapsible),
+          useNativeSortable: stringToBoolean($attr.useNativeSortable),
+          singleWidgetMode: stringToBoolean($attr.singleWidgetMode)
         };
         if (angular.isDefined($attr.editable)){
           options.editable = stringToBoolean($attr.editable);

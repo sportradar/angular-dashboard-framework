@@ -237,7 +237,7 @@ angular.module('adf.provider', [])
          * @ngdoc method
          * @name adf.dashboard#idEqual
          * @methodOf adf.dashboard
-         * @param {string} id
+         * @param {string} first id
          * @param {string} other id
          * @description
          *

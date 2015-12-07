@@ -37,16 +37,18 @@ angular.module('adf')
             definition.title = w.title;
           }
 
-          if (!definition.titleTemplateUrl) {
-            definition.titleTemplateUrl = adfTemplatePath + 'widget-title.html';
-            if (w.titleTemplateUrl) {
-              definition.titleTemplateUrl = w.titleTemplateUrl;
-            }
-          }
+          definition.minSize = w.minSize;
 
-          if (!definition.titleTemplateUrl) {
-            definition.frameless = w.frameless;
-          }
+          //if (!definition.titleTemplateUrl) {
+          //  definition.titleTemplateUrl = adfTemplatePath + 'widget-title.html';
+          //  if (w.titleTemplateUrl) {
+          //    definition.titleTemplateUrl = w.titleTemplateUrl;
+          //  }
+          //}
+
+          //if (!definition.titleTemplateUrl) {
+          //  definition.frameless = w.frameless;
+          //}
 
           if (!definition.styleClass) {
             definition.styleClass = w.styleClass;
@@ -60,24 +62,44 @@ angular.module('adf')
           // pass copy of widget to scope
           $scope.widget = angular.copy(w);
 
-          // create config object
-          var config = definition.config;
-          if (config) {
-            if (angular.isString(config)) {
-              config = angular.fromJson(config);
-            }
-          } else {
-            config = {};
+          $scope.widget.titleTemplateUrl = adfTemplatePath + 'widget-title-custom.html';
+          if (w.titleTemplateUrl) {
+            $scope.widget.titleTemplateUrl = w.titleTemplateUrl;
           }
 
+          // merge default config object with definition from database
+          for (var configIdx in w.config) {
+            if(!definition.config[configIdx]) {
+              definition.config[configIdx] = w.config[configIdx];
+            }
+          }
+
+          //// create config object
+          //var config = definition.config;
+          //if (config) {
+          //  if (angular.isString(config)) {
+          //    config = angular.fromJson(config);
+          //  }
+          //} else {
+          //  config = {};
+          //}
+
           // pass config to scope
-          $scope.config = config;
+          $scope.config = definition.config;
+          $scope.widgetSharedData = w.widgetSharedData ? angular.copy(w.widgetSharedData) : {};
+
+          $scope.widgetSharedData.editMode = $scope.editMode;
+          $scope.$watch('editMode', function(editMode){
+            $scope.widgetSharedData.editMode = editMode;
+          });
 
           // collapse exposed $scope.widgetState property
           if (!$scope.widgetState) {
             $scope.widgetState = {};
             $scope.widgetState.isCollapsed= (w.collapsed === true) ? w.collapsed : false;
           }
+
+          $scope.widgetState.isValidWidth = !w.minSize || $scope.col.width >= w.minSize;
 
         } else {
           $log.warn('could not find widget ' + definition.type);
@@ -183,7 +205,8 @@ angular.module('adf')
         col: '=column',
         editMode: '=',
         options: '=',
-        widgetState: '='
+        widgetState: '=',
+        columnState: '='
       },
       controller: function($scope) {
 
@@ -213,6 +236,11 @@ angular.module('adf')
             instance.close();
             fullScreenScope.$destroy();
           };
+        };
+
+        $scope.toggleWidgetFullscreen = function(){
+          $scope.columnState.isExpanded = !$scope.columnState.isExpanded;
+          $rootScope.$broadcast('widgetToggleFullscreen', $scope.col.cid);
         };
       },
       compile: function() {

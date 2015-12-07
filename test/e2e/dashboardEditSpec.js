@@ -30,6 +30,7 @@ var helper = require('./helper.js')
 describe('dashboard edit tests', function(){
 
   beforeEach(function(){
+    browser.pause(8234);
     browser.get('http://localhost:9003/sample/index.html#/sample/02');
     browser.executeScript('window.localStorage.clear();');
   });

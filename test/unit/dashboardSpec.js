@@ -67,32 +67,32 @@ describe('Dashboard Directive tests', function () {
         $scope.$digest();
         return el;
     }
-
-    it('should have the proper name in the h1 element (default template)', function () {
-
-        var element = compileTemplate(directive);
-        expect(element.find("h1").text().trim()).toBe('Sample 01');
-    });
-
-    it('should not change the name when the title changes (default template)', function () {
-
-        var element = compileTemplate(directive);
-        expect(element.find("h1").text().trim()).toBe('Sample 01');
-
-        // Change the name of the dashboard
-        $scope.name = 'Sample 02';
-        expect(element.find("h1").text().trim()).toBe('Sample 01');
-    });
-
-    it('should not change the name when the title changes (default template)', function () {
-
-        var element = compileTemplate(directive);
-        expect(element.find("h1").text().trim()).toBe('Sample 01');
-
-        // Change the name of the dashboard
-        $scope.name = 'Sample 02';
-        expect(element.find("h1").text().trim()).toBe('Sample 01');
-    });
+    //
+    //it('should have the proper name in the h1 element (default template)', function () {
+    //
+    //    var element = compileTemplate(directive);
+    //    expect(element.find("h1").text().trim()).toBe('Sample 01');
+    //});
+    //
+    //it('should not change the name when the title changes (default template)', function () {
+    //
+    //    var element = compileTemplate(directive);
+    //    expect(element.find("h1").text().trim()).toBe('Sample 01');
+    //
+    //    // Change the name of the dashboard
+    //    $scope.name = 'Sample 02';
+    //    expect(element.find("h1").text().trim()).toBe('Sample 01');
+    //});
+    //
+    //it('should not change the name when the title changes (default template)', function () {
+    //
+    //    var element = compileTemplate(directive);
+    //    expect(element.find("h1").text().trim()).toBe('Sample 01');
+    //
+    //    // Change the name of the dashboard
+    //    $scope.name = 'Sample 02';
+    //    expect(element.find("h1").text().trim()).toBe('Sample 01');
+    //});
 
     it('should toggle edit mode correctly', function () {
 

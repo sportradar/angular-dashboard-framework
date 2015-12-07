@@ -1,0 +1,32 @@
+<div class="row dashboard-nav">
+  <div class="col-md-8">
+    <h1 ng-if="editMode">
+      {{model.title}}
+    </h1>
+  </div>
+  <div class="col-md-4">
+    <ul style="font-size: 16px" class="nav navbar-nav navbar-right dashboard-menu">
+      <li ng-if="editMode">
+        <a href="" title="edit dashboard" ng-click="editDashboardDialog()">
+          <i class="fa fa-sliders"></i>
+          <p>Settings</p>
+        </a>
+      </li>
+      <li ng-if="editMode">
+        <a href="" title="{{editMode ? 'save changes' : 'enable edit mode'}}"
+           ng-click="toggleEditMode()">
+          <i class="fa" x-ng-class="{'fa-pencil' : !editMode, 'fa-floppy-o' : editMode}"></i>
+
+          <p ng-if="editMode">Save</p>
+          <p ng-if="!editMode">Edit</p>
+        </a>
+      </li>
+      <li ng-if="editMode">
+        <a href="" title="undo changes" ng-click="cancelEditMode()">
+          <i class="fa fa-undo adf-flip"></i>
+          <p>Undo</p>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>

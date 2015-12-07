@@ -21,8 +21,6 @@
  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  THE SOFTWARE.
 */
-
-
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
   display: none !important;
 }
@@ -33,12 +31,34 @@
 }
 
 .edit .column {
-  min-height: 120px;
+  min-height: 140px;
   border: 1px #ccc dashed;
   padding-top: 15px;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
+}
+
+.edit .column .disable-put {
+  background: #fae1e1;
+}
+
+.edit .adf-widgets {
+  min-height: 105px;
+}
+
+.edit .adf-nested {
+  min-height: 0;
+  margin-top: -15px;
+}
+
+.empty-placeholder {
+  margin-top: -90px;
+  min-height: 95px;
+}
+
+.widgets-warning {
+  background: lightcoral;
 }
 
 pre.edit {
@@ -53,6 +73,10 @@ pre.edit {
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
+}
+
+.column.full-screen {
+  width: 100%;
 }
 
 .widget h3 a {
@@ -75,9 +99,10 @@ pre.edit {
   filter: FlipH;
   -ms-filter: "FlipH";
 }
+
 /*
  modal dialog in fullscreen
 */
 .dashboard-modal.widget-fullscreen .modal-dialog {
- width: 98%;
+  width: 98%;
 }
