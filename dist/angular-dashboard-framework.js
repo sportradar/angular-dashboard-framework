@@ -639,7 +639,6 @@ angular.module('adf')
         adfModel: '=',
         adfWidgetFilter: '=',
         singleWidgetMode: '@',
-        useNativeSortable: '@',
         externalApi: '='
       },
       controller: ["$scope", function($scope){
@@ -802,6 +801,24 @@ angular.module('adf')
           };
         };
 
+        $scope.manageEditMode = function () {
+          $scope.editMode = !$scope.editMode;
+          if ($scope.editMode){
+            $scope.modelCopy = angular.copy($scope.adfModel, {});
+          }
+          return $scope.editMode;
+        };
+
+        $scope.saveDashboard = function() {
+          $scope.editMode = false;
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
+          return false;
+        };
+
+        $scope.changeStructure = function(name, structure){
+          changeStructure(model, structure, $scope);
+        };
+
         $scope.addNewWidgetToModel = addNewWidgetToModel;
 
         $scope.$on('addWidgetDialog', function(event, column) {
@@ -818,7 +835,6 @@ angular.module('adf')
           enableConfirmDelete: stringToBoolean($attr.enableconfirmdelete),
           maximizable: stringToBoolean($attr.maximizable),
           collapsible: stringToBoolean($attr.collapsible),
-          useNativeSortable: stringToBoolean($attr.useNativeSortable),
           singleWidgetMode: stringToBoolean($attr.singleWidgetMode)
         };
         if (angular.isDefined($attr.editable)){
@@ -1368,6 +1384,9 @@ angular.module('adf')
 
           // merge default config object with definition from database
           for (var configIdx in w.config) {
+            if(!definition.config) {
+              definition.config = {};
+            }
             if(!definition.config[configIdx]) {
               definition.config[configIdx] = w.config[configIdx];
             }
@@ -1563,7 +1582,7 @@ $templateCache.put("../src/templates/dashboard-edit.html","<div class=modal-head
 $templateCache.put("../src/templates/dashboard-row.html","<div class=row ng-class=row.styleClass>  </div> ");
 $templateCache.put("../src/templates/dashboard-title-custom.html","<div class=\"row dashboard-nav\"> <div class=col-md-8> <h1 ng-if=editMode> {{model.title}} </h1> </div> <div class=col-md-4> <ul style=\"font-size: 16px\" class=\"nav navbar-nav navbar-right dashboard-menu\"> <li ng-if=editMode> <a href title=\"edit dashboard\" ng-click=editDashboardDialog()> <i class=\"fa fa-sliders\"></i> <p>Settings</p> </a> </li> <li ng-if=editMode> <a href title=\"{{editMode ? \'save changes\' : \'enable edit mode\'}}\" ng-click=toggleEditMode()> <i class=fa x-ng-class=\"{\'fa-pencil\' : !editMode, \'fa-floppy-o\' : editMode}\"></i> <p ng-if=editMode>Save</p> <p ng-if=!editMode>Edit</p> </a> </li> <li ng-if=editMode> <a href title=\"undo changes\" ng-click=cancelEditMode()> <i class=\"fa fa-undo adf-flip\"></i> <p>Undo</p> </a> </li> </ul> </div> </div> ");
 $templateCache.put("../src/templates/dashboard-title.html","<h1> {{model.title}} <span style=\"font-size: 16px\" class=pull-right> <a href ng-if=editMode title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"glyphicon glyphicon-plus-sign\"></i> </a> <a href ng-if=editMode title=\"edit dashboard\" ng-click=editDashboardDialog()> <i class=\"glyphicon glyphicon-cog\"></i> </a> <a href ng-if=options.editable title=\"{{editMode ? \'save changes\' : \'enable edit mode\'}}\" ng-click=toggleEditMode()> <i class=glyphicon x-ng-class=\"{\'glyphicon-edit\' : !editMode, \'glyphicon-save\' : editMode}\"></i> </a> <a href ng-if=editMode title=\"undo changes\" ng-click=cancelEditMode()> <i class=\"glyphicon glyphicon-repeat adf-flip\"></i> </a> </span> </h1> ");
-$templateCache.put("../src/templates/dashboard.html","<div class=dashboard-container> <div ng-include src=model.titleTemplateUrl></div> <div class=\"dashboard container-fluid\" x-ng-class=\"{\'edit\' : editMode}\"> <adf-dashboard-row row=row adf-model=model options=options ng-repeat=\"row in model.rows\" edit-mode=editMode continuous-edit-mode=continuousEditMode> </adf-dashboard-row></div> </div> ");
+$templateCache.put("../src/templates/dashboard.html","<div class=dashboard-container>  <div class=\"dashboard container-fluid\" x-ng-class=\"{\'edit\' : editMode}\"> <adf-dashboard-row row=row adf-model=model options=options ng-repeat=\"row in model.rows\" edit-mode=editMode continuous-edit-mode=continuousEditMode> </adf-dashboard-row></div> </div> ");
 $templateCache.put("../src/templates/widget-add.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Add new widget</h4> </div> <div class=modal-body> <div style=\"display: inline-block;\"> <dl class=dl-horizontal> <dt ng-repeat-start=\"(key, widget) in widgets\"> <a href ng-click=addWidget(key)> {{widget.title}} </a> </dt> <dd ng-repeat-end ng-if=widget.description> {{widget.description}} </dd> </dl> <div ng-if=noWidgetsAvailable>No widgets available for selected placeholder</div> </div> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/widget-delete.html","<div class=modal-header> <h4 class=modal-title>Delete {{widget.title}}</h4> </div> <div class=modal-body> <form role=form> <div class=form-group> <label for=widgetTitle>Are you sure you want to delete this widget ?</label> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Close</button> <button type=button class=\"btn btn-primary\" ng-click=deleteDialog()>Delete</button> </div> ");
 $templateCache.put("../src/templates/widget-edit.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>{{widget.title}}</h4> </div> <div class=modal-body> <form role=form> <div class=form-group> <label for=widgetTitle>Title</label> <input type=text class=form-control id=widgetTitle ng-model=definition.title placeholder=\"Enter title\" required> </div> </form> <div ng-if=widget.edit> <adf-widget-content model=definition content=widget.edit> </adf-widget-content></div> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Cancel</button> <button type=button class=\"btn btn-primary\" ng-click=saveDialog()>Apply</button> </div> ");

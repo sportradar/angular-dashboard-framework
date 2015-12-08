@@ -69,6 +69,9 @@ angular.module('adf')
 
           // merge default config object with definition from database
           for (var configIdx in w.config) {
+            if(!definition.config) {
+              definition.config = {};
+            }
             if(!definition.config[configIdx]) {
               definition.config[configIdx] = w.config[configIdx];
             }

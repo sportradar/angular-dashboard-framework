@@ -290,7 +290,6 @@ angular.module('adf')
         adfModel: '=',
         adfWidgetFilter: '=',
         singleWidgetMode: '@',
-        useNativeSortable: '@',
         externalApi: '='
       },
       controller: function($scope){
@@ -453,6 +452,24 @@ angular.module('adf')
           };
         };
 
+        $scope.manageEditMode = function () {
+          $scope.editMode = !$scope.editMode;
+          if ($scope.editMode){
+            $scope.modelCopy = angular.copy($scope.adfModel, {});
+          }
+          return $scope.editMode;
+        };
+
+        $scope.saveDashboard = function() {
+          $scope.editMode = false;
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
+          return false;
+        };
+
+        $scope.changeStructure = function(name, structure){
+          changeStructure(model, structure, $scope);
+        };
+
         $scope.addNewWidgetToModel = addNewWidgetToModel;
 
         $scope.$on('addWidgetDialog', function(event, column) {
@@ -469,7 +486,6 @@ angular.module('adf')
           enableConfirmDelete: stringToBoolean($attr.enableconfirmdelete),
           maximizable: stringToBoolean($attr.maximizable),
           collapsible: stringToBoolean($attr.collapsible),
-          useNativeSortable: stringToBoolean($attr.useNativeSortable),
           singleWidgetMode: stringToBoolean($attr.singleWidgetMode)
         };
         if (angular.isDefined($attr.editable)){
