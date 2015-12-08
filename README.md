@@ -1,4 +1,4 @@
-# angular-dashboard-framework (customized for admin_web_console)
+# angular-dashboard-framework (customized for mts)
 
 [![Packagist](https://img.shields.io/packagist/l/doctrine/orm.svg)](https://github.com/angular-dashboard-framework/angular-dashboard-framework/blob/master/LICENSE.md) [![Build Status](https://travis-ci.org/angular-dashboard-framework/angular-dashboard-framework.svg?branch=master)](https://travis-ci.org/angular-dashboard-framework/angular-dashboard-framework) [![Dependency Status](https://www.versioneye.com/user/projects/562008b836d0ab001900070b/badge.svg?style=flat)](https://www.versioneye.com/user/projects/562008b836d0ab001900070b) [![Join the chat at https://gitter.im/sdorra/angular-dashboard-framework](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/angular-dashboard-framework/angular-dashboard-framework?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
