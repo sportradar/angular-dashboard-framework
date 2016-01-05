@@ -61,6 +61,7 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
+    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
@@ -122,7 +123,6 @@ angular.module('adf')
         });
       }
     }
-    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -621,6 +621,10 @@ angular.module('adf')
         scope.changeStructure(name, structure, scope);
       };
 
+      api.triggerDashboardChanged = function() {
+        scope.triggerDashboardChanged();
+      };
+
       scope.externalApi = api;
     }
 
@@ -815,14 +819,23 @@ angular.module('adf')
           return false;
         };
 
-        $scope.changeStructure = function(name, structure){
+        $scope.changeStructure = function(name, structure) {
           changeStructure(model, structure, $scope);
+        };
+
+        $scope.triggerDashboardChanged = function() {
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
         };
 
         $scope.addNewWidgetToModel = addNewWidgetToModel;
 
         $scope.$on('addWidgetDialog', function(event, column) {
           $scope.addWidgetDialog(column);
+        });
+
+        $scope.$on('notifyDashboardWidgetChanged', function() {
+          // Trigger auto save
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
         });
 
         setExternalApiFunctions($scope);

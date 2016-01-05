@@ -272,6 +272,10 @@ angular.module('adf')
         scope.changeStructure(name, structure, scope);
       };
 
+      api.triggerDashboardChanged = function() {
+        scope.triggerDashboardChanged();
+      };
+
       scope.externalApi = api;
     }
 
@@ -466,14 +470,23 @@ angular.module('adf')
           return false;
         };
 
-        $scope.changeStructure = function(name, structure){
+        $scope.changeStructure = function(name, structure) {
           changeStructure(model, structure, $scope);
+        };
+
+        $scope.triggerDashboardChanged = function() {
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
         };
 
         $scope.addNewWidgetToModel = addNewWidgetToModel;
 
         $scope.$on('addWidgetDialog', function(event, column) {
           $scope.addWidgetDialog(column);
+        });
+
+        $scope.$on('notifyDashboardWidgetChanged', function() {
+          // Trigger auto save
+          $rootScope.$broadcast('adfDashboardChanged', name, model);
         });
 
         setExternalApiFunctions($scope);
