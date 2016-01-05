@@ -29,16 +29,25 @@ describe('widget directive tests', function() {
   var $compile,
       $rootScope,
       $uibModal,
+      $uibModalInstance,
       $scope,
       directive,
       dashboard;
 
   // Load the myApp module, which contains the directive
   beforeEach(function(){
+    $uibModalInstance = {
+      closed: false,
+      close: function(){
+        this.closed = true;
+      }
+    };
+
     var modalMock = {
       opts: null,
       open: function(opts){
         this.opts = opts;
+        return $uibModalInstance;
       }
     };
 
@@ -87,25 +96,113 @@ describe('widget directive tests', function() {
       expect(element.find('.hello').text()).toBe('Hello World');
   });
 
-  it('should remove the widget from dashboard', function() {
+  it('should rerender the widget on refresh', function(){
+    var counter = 0;
+    dashboard.widgets['test'] = {
+      template: '<div class="hello">Hello World</div>',
+      reload: true,
+      controller: function(){
+        counter++;
+      }
+    };
+    $scope.definition = {
+      type: 'test'
+    };
+    var element = compileTemplate(directive);
+    expect(counter).toBe(1);
+    element.find('.glyphicon-refresh').click();
+    expect(counter).toBe(2);
+  });
+
+  describe('delete functions', function(){
+
+    beforeEach(function(){
       dashboard.widgets['test'] = {
-        template: '<div>Hello World</div>'
+        template: '<div>Confirm delete test</div>'
       };
       var widget = {
         type: 'test'
       };
       $scope.definition = widget;
       $scope.column = {
-        widgets: [widget, {type: 'tesa'}]
+        widgets: [widget, {type: 'test'}]
       };
-      $scope.editMode = true;
 
+      $scope.editMode = true;
+    });
+
+    function removeWidget(){
       var element = compileTemplate(directive);
       element.find('.glyphicon-remove').click();
       $scope.$digest();
+    };
 
+    it('should remove the widget from dashboard', function() {
+        removeWidget();
+        expect($scope.column.widgets.length).toBe(1);
+        expect($scope.column.widgets[0].type).toBe('test');
+    });
+
+    it('should open confirmation dialog on widget remove', function(){
+      $scope.options.enableConfirmDelete = true;
+      removeWidget();
+
+      // check for delete template
+      expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-delete.html');
+    });
+
+    it('should open confirmation dialog with custom template', function(){
+      $scope.definition.deleteTemplateUrl = '../src/templates/widget-edit.html';
+      $scope.options.enableConfirmDelete = true;
+      removeWidget();
+
+      // check for delete template
+      expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-edit.html');
+    });
+
+    it('should not delete the widget when confirmation dialog is canceled', function(){
+      $scope.options.enableConfirmDelete = true;
+      removeWidget();
+
+      $uibModal.opts.scope.closeDialog();
+      expect($uibModalInstance.closed).toBeTruthy();
+
+      // expect widget is not removed
+      expect($scope.column.widgets.length).toBe(2);
+    });
+
+    it('should delete the widget when confirmation dialog is applied', function(){
+      $scope.options.enableConfirmDelete = true;
+      removeWidget();
+
+      $uibModal.opts.scope.deleteDialog();
+      expect($uibModalInstance.closed).toBeTruthy();
+
+      // expect widget is not removed
       expect($scope.column.widgets.length).toBe(1);
-      expect($scope.column.widgets[0].type).toBe('tesa');
+    });
+
+  });
+
+  it('should open and close full screen dialog', function() {
+    dashboard.widgets['test'] = {
+      template: '<div class="hello">Hello World</div>'
+    };
+    $scope.definition = {
+      type: 'test'
+    };
+    compileTemplate(directive);
+    var element = compileTemplate(directive);
+    element.find('.glyphicon-fullscreen').click();
+    $scope.$digest();
+
+    // check for opened full screent
+    expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-fullscreen.html');
+    expect($uibModalInstance.closed).toBeFalsy();
+
+    // check close function
+    $uibModal.opts.scope.closeDialog();
+    expect($uibModalInstance.closed).toBeTruthy();
   });
 
   it('should set isCollapsed to true', function() {
@@ -124,25 +221,126 @@ describe('widget directive tests', function() {
     expect($scope.widgetState.isCollapsed).toBe(true);
   });
 
-  it('should open the edit mode', function() {
-    dashboard.widgets['test'] = {
-      wid: '1',
-      template: '<div class="hello">Hello World</div>',
-      edit: {
-        immediate: true
-      }
-    };
-    $scope.definition = {
-      wid: '1',
-      type: 'test'
-    };
-    compileTemplate(directive);
-    $rootScope.$broadcast('adfWidgetEnterEditMode', dashboard.widgets['test']);
+  describe('edit mode tests', function(){
 
-    // check for edit mode template
-    expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-edit.html');
-    // check for correct widget in edit scope
-    expect($uibModal.opts.scope.definition.wid).toBe('1');
+    beforeEach(function(){
+      dashboard.widgets['test'] = {
+        wid: '1',
+        template: '<div class="hello">Hello World</div>',
+        edit: {
+          immediate: true
+        }
+      };
+
+      $scope.definition = {
+        wid: '1',
+        type: 'test'
+      };
+    });
+
+    function openEditMode(){
+      compileTemplate(directive);
+      $rootScope.$broadcast('adfWidgetEnterEditMode', dashboard.widgets['test']);
+
+      // check for edit mode template
+      expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-edit.html');
+      // check for correct widget in edit scope
+      expect($uibModal.opts.scope.definition.wid).toBe('1');
+    };
+
+    function checkApplyFunction(apply, check){
+      dashboard.widgets['test'].edit.apply = apply;
+
+      openEditMode();
+
+      // call save dialog method
+      $uibModal.opts.scope.saveDialog();
+
+      // TODO find better way as timeout
+      $scope.$digest();
+      check();
+    };
+
+    it('should open the edit mode', openEditMode);
+
+    it('should open the edit mode with custom template', function() {
+      $scope.definition.editTemplateUrl = '../src/templates/widget-delete.html';
+      compileTemplate(directive);
+      $rootScope.$broadcast('adfWidgetEnterEditMode', dashboard.widgets['test']);
+
+      // check for custom template
+      expect($uibModal.opts.templateUrl).toBe('../src/templates/widget-delete.html');
+    });
+
+    it('should open the edit mode with falsy apply', function() {
+      checkApplyFunction(function(){
+        return false;
+      }, function(){
+        expect($uibModal.opts.scope.validationError).not.toBeNull();
+      });
+      expect($uibModalInstance.closed).toBeFalsy();
+    });
+
+    it('should open the edit mode with truthy apply', function() {
+      checkApplyFunction(function(){
+        return true;
+      }, function(){
+        expect($uibModal.opts.scope.validationError).toBeNull();
+      });
+      expect($uibModalInstance.closed).toBeTruthy();
+    });
+
+    it('should open the edit mode with truthy promise apply', function() {
+      checkApplyFunction(function($q){
+        return $q.when('success');
+      }, function(){
+        expect($uibModal.opts.scope.validationError).toBeNull();
+      });
+      expect($uibModalInstance.closed).toBeTruthy();
+    });
+
+    it('should open the edit mode with falsy promise apply', function() {
+      checkApplyFunction(function($q){
+        var deferred = $q.defer();
+        deferred.reject('failed');
+        return deferred.promise;
+      }, function(){
+        expect($uibModal.opts.scope.validationError).not.toBeNull();
+      });
+      expect($uibModalInstance.closed).toBeFalsy();
+    });
+
+  });
+
+  describe('widget classes', function(){
+
+    beforeEach(function(){
+      dashboard.widgets['test'] = {
+        template: '<div class="hello">Hello World</div>'
+      };
+      $scope.definition = {
+        type: 'test',
+        styleClass: 'sample'
+      };
+    });
+
+    it('should render the widget with classes', function() {
+        var element = compileTemplate(directive);
+        expect(element.attr('class').indexOf('panel') !== -1).toBe(true);
+        expect(element.attr('class').indexOf('panel-default') !== -1).toBe(true);
+        expect(element.attr('class').indexOf('widget') !== -1).toBe(true);
+        expect(element.attr('class').indexOf('sample') !== -1).toBe(true);
+    });
+
+    it('should render the widget without default classes in frameless mode', function() {
+        dashboard.widgets['test'].frameless = true;
+        var element = compileTemplate(directive);
+        expect(element.attr('class').indexOf('panel') !== -1).toBe(false);
+        expect(element.attr('class').indexOf('panel-default') !== -1).toBe(false);
+        expect(element.attr('class').indexOf('widget') !== -1).toBe(true);
+        expect(element.attr('class').indexOf('sample') !== -1).toBe(true);
+    });
+
   });
 
 });

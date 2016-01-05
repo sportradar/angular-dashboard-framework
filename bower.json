@@ -1,6 +1,6 @@
 {
   "name": "angular-dashboard-framework",
-  "version": "0.11.0-SNAPSHOT",
+  "version": "0.12.0-SNAPSHOT",
   "license": "MIT",
   "authors": [
     "Sebastian Sdorra"
@@ -39,8 +39,8 @@
   "dependencies": {
     "angular": ">=1.2",
     "angular-bootstrap": "^0.14.3",
-    "bootstrap": "3.3.5",
-    "Sortable": "1.2.1"
+    "bootstrap": "^3.3.6",
+    "Sortable": "^1.2.1"
   },
   "devDependencies": {
     "angular-mocks": ">=1.2",

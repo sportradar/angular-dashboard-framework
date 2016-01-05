@@ -29,7 +29,7 @@ angular.module('adf', ['adf.provider', 'ui.bootstrap'])
   .value('adfTemplatePath', '../src/templates/')
   .value('rowTemplate', '<adf-dashboard-row row="row" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="row in column.rows" />')
   .value('columnTemplate', '<adf-dashboard-column-custom column="column" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="column in row.columns" />')
-  .value('adfVersion', '0.11.0-SNAPSHOT');
+  .value('adfVersion', '0.12.0-SNAPSHOT');
 
 /*
  * The MIT License
@@ -61,7 +61,6 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
-    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
@@ -124,6 +123,7 @@ angular.module('adf')
         });
       }
     }
+    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -741,7 +741,7 @@ angular.module('adf')
             templateUrl: adfEditTemplatePath,
             backdrop: 'static'
           });
-          $scope.changeStructure = function(name, structure){
+          editDashboardScope.changeStructure = function(name, structure){
             $log.info('change structure to ' + name);
             changeStructure(model, structure, $scope);
           };
@@ -907,6 +907,11 @@ angular.module('adf.provider', [])
         </div>\n\
       </div>';
 
+    // default apply function of widget.edit.apply
+    var defaultApplyFunction = function(){
+      return true;
+    };
+
    /**
     * @ngdoc method
     * @name adf.dashboardProvider#widget
@@ -957,6 +962,9 @@ angular.module('adf.provider', [])
     *      - `reload` - {boolean} - true if the widget should be reloaded, after the edit mode is closed.
     *        Default is true.
     *      - `immediate` - {boolean} - The widget enters the edit mode immediately after creation. Default is false.
+    *      - `apply` - `{function()=}` - The apply function is called, before the widget is saved.
+    *        The function have to return a boolean or an promise which can be resolved to a boolean.
+    *        The function can use injection.
     *
     * @returns {Object} self
     */
@@ -965,7 +973,8 @@ angular.module('adf.provider', [])
       if ( w.edit ){
         var edit = {
           reload: true,
-          immediate: false
+          immediate: false,
+          apply: defaultApplyFunction
         };
         angular.extend(edit, w.edit);
         w.edit = edit;
@@ -1099,11 +1108,12 @@ angular.module('adf.provider', [])
          * @ngdoc method
          * @name adf.dashboard#idEqual
          * @methodOf adf.dashboard
-         * @param {string} first id
-         * @param {string} other id
          * @description
          *
          * Checks if the given ids are equal.
+         *
+         * @param {string} id widget or column id
+         * @param {string} other widget or column id
          */
          idEquals: function(id, other){
            // use toString, because old ids are numbers
@@ -1354,7 +1364,7 @@ angular.module('adf')
 
 
 angular.module('adf')
-  .directive('adfWidget', ["$log", "$uibModal", "$rootScope", "dashboard", "adfTemplatePath", function($log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
+  .directive('adfWidget', ["$injector", "$q", "$log", "$uibModal", "$rootScope", "dashboard", "adfTemplatePath", function($injector, $q, $log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
 
     function preLink($scope) {
       var definition = $scope.definition;
@@ -1507,20 +1517,61 @@ angular.module('adf')
           };
 
           var instance = $uibModal.open(opts);
+
           editScope.closeDialog = function() {
             instance.close();
             editScope.$destroy();
           };
+
+          // TODO create util method
+          function createApplyPromise(result){
+            var promise;
+            if (typeof result === 'boolean'){
+              var deferred = $q.defer();
+              if (result){
+                deferred.resolve();
+              } else {
+                deferred.reject();
+              }
+              promise = deferred.promise;
+            } else {
+              promise = $q.when(result);
+            }
+            return promise;
+          }
+
           editScope.saveDialog = function() {
-            definition.title = editScope.definition.title;
-            angular.extend(definition.config, editScope.definition.config);
+            // clear validation error
+            editScope.validationError = null;
+
+            // build injection locals
             var widget = $scope.widget;
-            if (widget.edit && widget.edit.reload) {
+            var applyFn = widget.edit.apply;
+            var locals = {
+              widget: widget,
+              definition: editScope.definition,
+              config: editScope.definition.config
+            };
+
+            // invoke apply function and apply if success
+            var result = $injector.invoke(applyFn, applyFn, locals);
+            createApplyPromise(result).then(function(){
+              definition.title = editScope.definition.title;
+              angular.extend(definition.config, editScope.definition.config);
+              if (widget.edit && widget.edit.reload) {
                 // reload content after edit dialog is closed
                 $scope.$broadcast('widgetConfigChanged');
-            }
-            editScope.closeDialog();
+              }
+              editScope.closeDialog();
+            }, function(err){
+              if (err){
+                editScope.validationError = err;
+              } else {
+                editScope.validationError = 'Validation durring apply failed';
+              }
+            });
           };
+
         };
       } else {
         $log.debug('widget not found');
@@ -1551,6 +1602,17 @@ angular.module('adf')
             $scope.edit();
           }
         });
+
+        $scope.widgetClasses = function(w, definition, widgetState){
+          var classes = definition.styleClass || '';
+          if (!w.frameless || $scope.editMode){
+            classes += ' panel panel-default';
+          }
+          if (!widgetState.isValidWidth) {
+            classes += ' widgets-warning'
+          }
+          return classes;
+        };
 
         $scope.openFullScreen = function() {
           var definition = $scope.definition;
@@ -1599,8 +1661,8 @@ $templateCache.put("../src/templates/dashboard-title.html","<h1> {{model.title}}
 $templateCache.put("../src/templates/dashboard.html","<div class=dashboard-container>  <div class=\"dashboard container-fluid\" x-ng-class=\"{\'edit\' : editMode}\"> <adf-dashboard-row row=row adf-model=model options=options ng-repeat=\"row in model.rows\" edit-mode=editMode continuous-edit-mode=continuousEditMode> </adf-dashboard-row></div> </div> ");
 $templateCache.put("../src/templates/widget-add.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Add new widget</h4> </div> <div class=modal-body> <div style=\"display: inline-block;\"> <dl class=dl-horizontal> <dt ng-repeat-start=\"(key, widget) in widgets\"> <a href ng-click=addWidget(key)> {{widget.title}} </a> </dt> <dd ng-repeat-end ng-if=widget.description> {{widget.description}} </dd> </dl> <div ng-if=noWidgetsAvailable>No widgets available for selected placeholder</div> </div> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/widget-delete.html","<div class=modal-header> <h4 class=modal-title>Delete {{widget.title}}</h4> </div> <div class=modal-body> <form role=form> <div class=form-group> <label for=widgetTitle>Are you sure you want to delete this widget ?</label> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Close</button> <button type=button class=\"btn btn-primary\" ng-click=deleteDialog()>Delete</button> </div> ");
-$templateCache.put("../src/templates/widget-edit.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>{{widget.title}}</h4> </div> <div class=modal-body> <form role=form> <div class=form-group> <label for=widgetTitle>Title</label> <input type=text class=form-control id=widgetTitle ng-model=definition.title placeholder=\"Enter title\" required> </div> </form> <div ng-if=widget.edit> <adf-widget-content model=definition content=widget.edit> </adf-widget-content></div> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Cancel</button> <button type=button class=\"btn btn-primary\" ng-click=saveDialog()>Apply</button> </div> ");
+$templateCache.put("../src/templates/widget-edit.html","<form name=widgetEditForm novalidate role=form ng-submit=saveDialog()> <div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>{{widget.title}}</h4> </div> <div class=modal-body> <div class=\"alert alert-danger\" role=alert ng-show=validationError> <strong>Apply error:</strong> {{validationError}} </div> <div class=form-group> <label for=widgetTitle>Title</label> <input type=text class=form-control id=widgetTitle ng-model=definition.title placeholder=\"Enter title\" required> </div> <div ng-if=widget.edit> <adf-widget-content model=definition content=widget.edit> </adf-widget-content></div> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Cancel</button> <input type=submit class=\"btn btn-primary\" ng-disabled=widgetEditForm.$invalid value=Apply> </div> </form> ");
 $templateCache.put("../src/templates/widget-fullscreen.html","<div class=modal-header> <div class=\"pull-right widget-icons\"> <a href title=\"Reload Widget Content\" ng-if=widget.reload ng-click=reload()> <i class=\"glyphicon glyphicon-refresh\"></i> </a> <a href title=close ng-click=closeDialog()> <i class=\"glyphicon glyphicon-remove\"></i> </a> </div> <h4 class=modal-title>{{definition.title}}</h4> </div> <div class=modal-body> <adf-widget-content model=definition content=widget> </adf-widget-content></div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/widget-title-custom.html","<div class=panel-title> <div class=status-bar-widget ng-if=widget.statusBar> <adf-widget-content class=status-bar-widget-content model=definition content=widget.statusBar widget-shared-data=widgetSharedData> </adf-widget-content></div> <div class=\"widget-actions pull-right\"> <div class=pull-right> <a href title=\"reload widget content\" ng-if=widget.reload ng-click=reload()> <i class=\"fa fa-refresh\"></i> </a>     <a href title=\"filter widget data\" ng-click=\"widgetState.showFilters = !widgetState.showFilters\" ng-if=widget.filter> <i class=\"fa fa-filter\"></i> </a>  <a href title=\"collapse widget\" ng-show=\"options.collapsible && !widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"fa fa-minus\"></i> </a>  <a href title=\"expand widget\" ng-show=\"options.collapsible && widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"fa fa-plus\"></i> </a>  <a href title=\"edit widget configuration\" ng-click=edit() ng-if=editMode> <i class=\"fa fa-cog\"></i> </a>  <a href title=\"fullscreen widget\" ng-click=toggleWidgetFullscreen() ng-show=options.maximizable> <i class=fa ng-class=\"columnState.isExpanded ? \'fa-compress\' : \'fa-expand\'\"></i> </a>  <a href title=\"remove widget\" ng-click=remove() ng-if=editMode> <i class=\"fa fa-times\"></i> </a> </div> <div ng-if=widget.headerActions class=pull-right> <adf-widget-content model=definition content=widget.headerActions widget-shared-data=widgetSharedData> </adf-widget-content></div> <div class=clear></div> </div> <div class=clear></div> </div> ");
 $templateCache.put("../src/templates/widget-title.html","<h3 class=panel-title> {{definition.title}} <span class=pull-right> <a href title=\"reload widget content\" ng-if=widget.reload ng-click=reload()> <i class=\"glyphicon glyphicon-refresh\"></i> </a>  <a href title=\"change widget location\" class=adf-move ng-if=editMode> <i class=\"glyphicon glyphicon-move\"></i> </a>  <a href title=\"collapse widget\" ng-show=\"options.collapsible && !widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"glyphicon glyphicon-minus\"></i> </a>  <a href title=\"expand widget\" ng-show=\"options.collapsible && widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"glyphicon glyphicon-plus\"></i> </a>  <a href title=\"edit widget configuration\" ng-click=edit() ng-if=editMode> <i class=\"glyphicon glyphicon-cog\"></i> </a> <a href title=\"fullscreen widget\" ng-click=openFullScreen() ng-show=options.maximizable> <i class=\"glyphicon glyphicon-fullscreen\"></i> </a>  <a href title=\"remove widget\" ng-click=remove() ng-if=editMode> <i class=\"glyphicon glyphicon-remove\"></i> </a> </span> </h3> ");
-$templateCache.put("../src/templates/widget.html","<div adf-id={{definition.wid}} adf-widget-type={{definition.type}} ng-class=\"[{\'panel panel-default\':!widget.frameless || editMode, \'widgets-warning\':!widgetState.isValidWidth},definition.styleClass]\" class=\"widget widget-box panel panel-default\"> <div class=\"panel-heading clearfix\" ng-if=\"!widget.frameless || editMode\"> <div ng-include src=widget.titleTemplateUrl ng-class=\"{\'adf-move\':editMode}\"></div> </div> <div ng-class=\"{\'panel-body\':!widget.frameless || editMode}\" uib-collapse=widgetState.isCollapsed> <div ng-if=\"widget.filter && widgetState.showFilters\" class=widget-filter> <adf-widget-content model=definition content=widget.filter widget-shared-data=widgetSharedData> </adf-widget-content></div> <adf-widget-content model=definition content=widget widget-shared-data=widgetSharedData> </adf-widget-content></div> </div> ");}]);})(window);
+$templateCache.put("../src/templates/widget.html","<div adf-id={{definition.wid}} adf-widget-type={{definition.type}} ng-class=\"widgetClasses(widget, definition, widgetState)\" class=\"widget widget-box panel panel-default\"> <div class=\"panel-heading clearfix\" ng-if=\"!widget.frameless || editMode\"> <div ng-include src=widget.titleTemplateUrl ng-class=\"{\'adf-move\':editMode}\"></div> </div> <div ng-class=\"{\'panel-body\':!widget.frameless || editMode}\" uib-collapse=widgetState.isCollapsed> <div ng-if=\"widget.filter && widgetState.showFilters\" class=widget-filter> <adf-widget-content model=definition content=widget.filter widget-shared-data=widgetSharedData> </adf-widget-content></div> <adf-widget-content model=definition content=widget widget-shared-data=widgetSharedData> </adf-widget-content></div> </div> ");}]);})(window);
