@@ -270,7 +270,7 @@ angular.module('adf')
             classes += ' panel panel-default';
           }
           if (!widgetState.isValidWidth) {
-            classes += ' widgets-warning'
+            classes += ' widgets-warning';
           }
           return classes;
         };
