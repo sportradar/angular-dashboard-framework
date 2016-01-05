@@ -86,6 +86,7 @@ angular.module('adf')
 
         $scope.$on('widgetMoveEnd', function () {
           $scope.sortableConfig.group.put = true;
+          $rootScope.$broadcast('notifyDashboardWidgetChanged');
         });
       }
     }
