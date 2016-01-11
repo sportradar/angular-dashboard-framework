@@ -1604,13 +1604,20 @@ angular.module('adf')
         });
 
         $scope.widgetClasses = function(w, definition, widgetState){
-          var classes = definition.styleClass || '';
-          if (!w.frameless || $scope.editMode){
-            classes += ' panel panel-default';
+          var classes = [];
+          classes.push('widget-' + definition.type);
+
+          if(definition.styleClass) {
+            classes.push(definition.styleClass);
           }
+
+          //if (!w.frameless || $scope.editMode){
+          //  classes += ' panel panel-default';
+          //}
           if (!widgetState.isValidWidth) {
-            classes += ' widgets-warning';
+            classes.push('widgets-warning');
           }
+
           return classes;
         };
 
@@ -1665,4 +1672,4 @@ $templateCache.put("../src/templates/widget-edit.html","<form name=widgetEditFor
 $templateCache.put("../src/templates/widget-fullscreen.html","<div class=modal-header> <div class=\"pull-right widget-icons\"> <a href title=\"Reload Widget Content\" ng-if=widget.reload ng-click=reload()> <i class=\"glyphicon glyphicon-refresh\"></i> </a> <a href title=close ng-click=closeDialog()> <i class=\"glyphicon glyphicon-remove\"></i> </a> </div> <h4 class=modal-title>{{definition.title}}</h4> </div> <div class=modal-body> <adf-widget-content model=definition content=widget> </adf-widget-content></div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/widget-title-custom.html","<div class=panel-title> <div class=status-bar-widget ng-if=widget.statusBar> <adf-widget-content class=status-bar-widget-content model=definition content=widget.statusBar widget-shared-data=widgetSharedData> </adf-widget-content></div> <div class=\"widget-actions pull-right\"> <div class=pull-right> <a href title=\"reload widget content\" ng-if=widget.reload ng-click=reload()> <i class=\"fa fa-refresh\"></i> </a>     <a href title=\"filter widget data\" ng-click=\"widgetState.showFilters = !widgetState.showFilters\" ng-if=widget.filter> <i class=\"fa fa-filter\"></i> </a>  <a href title=\"collapse widget\" ng-show=\"options.collapsible && !widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"fa fa-minus\"></i> </a>  <a href title=\"expand widget\" ng-show=\"options.collapsible && widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"fa fa-plus\"></i> </a>  <a href title=\"edit widget configuration\" ng-click=edit() ng-if=editMode> <i class=\"fa fa-cog\"></i> </a>  <a href title=\"fullscreen widget\" ng-click=toggleWidgetFullscreen() ng-show=options.maximizable> <i class=fa ng-class=\"columnState.isExpanded ? \'fa-compress\' : \'fa-expand\'\"></i> </a>  <a href title=\"remove widget\" ng-click=remove() ng-if=editMode> <i class=\"fa fa-times\"></i> </a> </div> <div ng-if=widget.headerActions class=pull-right> <adf-widget-content model=definition content=widget.headerActions widget-shared-data=widgetSharedData> </adf-widget-content></div> <div class=clear></div> </div> <div class=clear></div> </div> ");
 $templateCache.put("../src/templates/widget-title.html","<h3 class=panel-title> {{definition.title}} <span class=pull-right> <a href title=\"reload widget content\" ng-if=widget.reload ng-click=reload()> <i class=\"glyphicon glyphicon-refresh\"></i> </a>  <a href title=\"change widget location\" class=adf-move ng-if=editMode> <i class=\"glyphicon glyphicon-move\"></i> </a>  <a href title=\"collapse widget\" ng-show=\"options.collapsible && !widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"glyphicon glyphicon-minus\"></i> </a>  <a href title=\"expand widget\" ng-show=\"options.collapsible && widgetState.isCollapsed\" ng-click=\"widgetState.isCollapsed = !widgetState.isCollapsed\"> <i class=\"glyphicon glyphicon-plus\"></i> </a>  <a href title=\"edit widget configuration\" ng-click=edit() ng-if=editMode> <i class=\"glyphicon glyphicon-cog\"></i> </a> <a href title=\"fullscreen widget\" ng-click=openFullScreen() ng-show=options.maximizable> <i class=\"glyphicon glyphicon-fullscreen\"></i> </a>  <a href title=\"remove widget\" ng-click=remove() ng-if=editMode> <i class=\"glyphicon glyphicon-remove\"></i> </a> </span> </h3> ");
-$templateCache.put("../src/templates/widget.html","<div adf-id={{definition.wid}} adf-widget-type={{definition.type}} ng-class=\"widgetClasses(widget, definition, widgetState)\" class=\"widget widget-box panel panel-default\"> <div class=\"panel-heading clearfix\" ng-if=\"!widget.frameless || editMode\"> <div ng-include src=widget.titleTemplateUrl ng-class=\"{\'adf-move\':editMode}\"></div> </div> <div ng-class=\"{\'panel-body\':!widget.frameless || editMode}\" uib-collapse=widgetState.isCollapsed> <div ng-if=\"widget.filter && widgetState.showFilters\" class=widget-filter> <adf-widget-content model=definition content=widget.filter widget-shared-data=widgetSharedData> </adf-widget-content></div> <adf-widget-content model=definition content=widget widget-shared-data=widgetSharedData> </adf-widget-content></div> </div> ");}]);})(window);
+$templateCache.put("../src/templates/widget.html","<div adf-id={{definition.wid}} adf-widget-type={{definition.type}} ng-class=\"widgetClasses(widget, definition, widgetState)\" class=\"widget panel panel-default\"> <div class=\"panel-heading clearfix\" ng-if=\"!widget.frameless || editMode\"> <div ng-include src=widget.titleTemplateUrl ng-class=\"{\'adf-move\':editMode}\"></div> </div> <div ng-class=\"{\'panel-body\':!widget.frameless || editMode}\" uib-collapse=widgetState.isCollapsed> <div ng-if=\"widget.filter && widgetState.showFilters\" class=widget-filter> <adf-widget-content model=definition content=widget.filter widget-shared-data=widgetSharedData> </adf-widget-content></div> <adf-widget-content model=definition content=widget widget-shared-data=widgetSharedData> </adf-widget-content></div> </div> ");}]);})(window);
