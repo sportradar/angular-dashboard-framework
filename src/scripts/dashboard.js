@@ -99,7 +99,7 @@ angular.module('adf')
               if (!angular.isDefined(column.rows)){
                 copyWidgets(columns[counter], column, warnings);
                 counter++;
-                if(warnings.oneWidgetPerColumn === false && column.widgets.length > 1){
+                if(warnings && warnings.oneWidgetPerColumn === false && column.widgets.length > 1){
                   warnings.oneWidgetPerColumn = true;
                 }
               }
