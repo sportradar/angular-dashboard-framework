@@ -265,13 +265,20 @@ angular.module('adf')
         });
 
         $scope.widgetClasses = function(w, definition, widgetState){
-          var classes = definition.styleClass || '';
-          if (!w.frameless || $scope.editMode){
-            classes += ' panel panel-default';
+          var classes = [];
+          classes.push('widget-' + definition.type);
+
+          if(definition.styleClass) {
+            classes.push(definition.styleClass);
           }
+
+          //if (!w.frameless || $scope.editMode){
+          //  classes += ' panel panel-default';
+          //}
           if (!widgetState.isValidWidth) {
-            classes += ' widgets-warning';
+            classes.push('widgets-warning');
           }
+
           return classes;
         };
 
