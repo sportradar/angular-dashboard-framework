@@ -127,6 +127,7 @@ angular.module('adf')
           }
           $element.remove();
           $rootScope.$broadcast('adfWidgetRemovedFromColumn');
+          $rootScope.$broadcast('notifyDashboardWidgetChanged');
         };
 
         $scope.remove = function() {

@@ -38,7 +38,7 @@ angular.module('adf')
       var allowPutWidgetIntoColumn = function (widget, sourceColumn) {
         if ($scope.column === sourceColumn || !$scope.options.singleWidgetMode) {return true;}
 
-        var allowPutWidget = !widget.minSize || $scope.column.width >= widget.minSize;
+        var allowPutWidget = !widget || !widget.minSize || $scope.column.width >= widget.minSize;
         var columnHasWidgets = $scope.column.widgets.length ? false : true;
 
         return columnHasWidgets && allowPutWidget;

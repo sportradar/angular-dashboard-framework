@@ -448,6 +448,8 @@ angular.module('adf')
             if (isEditModeImmediate(widget)){
               openEditMode($scope, w);
             }
+
+            $rootScope.$broadcast('notifyDashboardWidgetChanged');
           };
           addScope.closeDialog = function(){
             // close and destroy
