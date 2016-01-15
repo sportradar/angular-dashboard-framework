@@ -527,11 +527,11 @@ angular.module('adf')
         $scope.$on('dashboardWidgetChanged', function() {
           // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
           event.stopPropagation();
-          
+
           $scope.triggerDashboardChanged();
         });
 
-        $scope.$on('dashboardWidgetConfigChanged', function(event, config, wid, cid) {
+        $scope.$on('dashboardWidgetConfigUpdated', function(event, config, wid, cid) {
           // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
           event.stopPropagation();
 

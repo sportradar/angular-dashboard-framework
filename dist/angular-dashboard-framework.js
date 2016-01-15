@@ -27,8 +27,8 @@
 
 angular.module('adf', ['adf.provider', 'ui.bootstrap'])
   .value('adfTemplatePath', '../src/templates/')
-  .value('rowTemplate', '<adf-dashboard-row row="row" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="row in column.rows" />')
-  .value('columnTemplate', '<adf-dashboard-column-custom column="column" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="column in row.columns" />')
+  .value('rowTemplate', '<adf-dashboard-row row="row" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="row in column.rows track by $index" />')
+  .value('columnTemplate', '<adf-dashboard-column-custom column="column" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="column in row.columns track by $index" />')
   .value('adfVersion', '0.12.0-SNAPSHOT');
 
 /*
@@ -61,7 +61,6 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
-    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
@@ -120,10 +119,11 @@ angular.module('adf')
 
         $scope.$on('widgetMoveEnd', function () {
           $scope.sortableConfig.group.put = true;
-          $rootScope.$broadcast('notifyDashboardWidgetChanged');
+          $scope.$emit('dashboardWidgetChanged');
         });
       }
     }
+    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -265,7 +265,7 @@ angular.module('adf')
             targetColumn.widgets.splice(evt.newIndex, 0, widget);
 
             $rootScope.$broadcast('adfWidgetAddedToColumn');
-            $rootScope.$broadcast('notifyDashboardWidgetChanged');
+            $scope.$emit('dashboardWidgetChanged');
           });
         } else {
           $log.warn('could not find widget with id ' + wid);
@@ -600,6 +600,44 @@ angular.module('adf')
       }, 200);
     }
 
+    /**
+     * finds a widget by its id in the column
+     */
+    function findWidget(column, index){
+      var widget = null;
+      for (var i=0; i<column.widgets.length; i++){
+        var w = column.widgets[i];
+        if (dashboard.idEquals(w.wid,index)){
+          widget = w;
+          break;
+        }
+      }
+      return widget;
+    }
+
+    /**
+     * finds a column by its id in the model
+     */
+    function findColumn(model, index){
+      var column = null;
+      for (var i=0; i<model.rows.length; i++){
+        var r = model.rows[i];
+        for (var j=0; j<r.columns.length; j++){
+          var c = r.columns[j];
+          if (dashboard.idEquals(c.cid, index)){
+            column = c;
+            break;
+          } else if (c.rows){
+            column = findColumn(c, index);
+          }
+        }
+        if (column){
+          break;
+        }
+      }
+      return column;
+    }
+
     function setExternalApiFunctions(scope) {
       var api = {};
 
@@ -703,7 +741,7 @@ angular.module('adf')
           }
 
           if (!$scope.editMode){
-            $rootScope.$broadcast('adfDashboardChanged', name, model);
+             $scope.triggerDashboardChanged();
           }
         };
 
@@ -800,7 +838,7 @@ angular.module('adf')
               openEditMode($scope, w);
             }
 
-            $rootScope.$broadcast('notifyDashboardWidgetChanged');
+            $scope.triggerDashboardChanged();
           };
           addScope.closeDialog = function(){
             // close and destroy
@@ -819,7 +857,7 @@ angular.module('adf')
 
         $scope.saveDashboard = function() {
           $scope.editMode = false;
-          $rootScope.$broadcast('adfDashboardChanged', name, model);
+          $scope.triggerDashboardChanged();
           return false;
         };
 
@@ -837,9 +875,28 @@ angular.module('adf')
           $scope.addWidgetDialog(column);
         });
 
-        $scope.$on('notifyDashboardWidgetChanged', function() {
-          // Trigger auto save
-          $rootScope.$broadcast('adfDashboardChanged', name, model);
+        $scope.$on('dashboardWidgetChanged', function() {
+          // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
+          event.stopPropagation();
+
+          $scope.triggerDashboardChanged();
+        });
+
+        $scope.$on('dashboardWidgetConfigUpdated', function(event, config, wid, cid) {
+          // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
+          event.stopPropagation();
+
+          // we need to overwrite config object before saving to database, otherwise it is set after saving so the changed data is lost
+          if(cid) {
+            var col = findColumn(model, cid);
+            if(wid && col) {
+              var widget = findWidget(col, wid);
+              if(widget) {
+                widget.config = config;
+                $scope.triggerDashboardChanged();
+              }
+            }
+          }
         });
 
         setExternalApiFunctions($scope);
@@ -1469,7 +1526,7 @@ angular.module('adf')
           }
           $element.remove();
           $rootScope.$broadcast('adfWidgetRemovedFromColumn');
-          $rootScope.$broadcast('notifyDashboardWidgetChanged');
+          $scope.$emit('dashboardWidgetChanged');
         };
 
         $scope.remove = function() {
@@ -1607,6 +1664,10 @@ angular.module('adf')
           }
         });
 
+        $scope.$on('widgetConfigUpdated', function() {
+          $scope.$emit('dashboardWidgetConfigUpdated', $scope.config, $scope.definition.wid, $scope.col.cid);
+        });
+
         $scope.widgetClasses = function(w, definition, widgetState){
           var classes = [];
           classes.push('widget-' + definition.type);
@@ -1663,13 +1724,13 @@ angular.module('adf')
 
   }]);
 
-angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'widgets-warning\': options.singleWidgetMode && column.widgets.length > 1, \'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows, \'disable-put\': editMode && !sortableConfig.group.put}\"> <adf-widget ng-repeat=\"definition in column.widgets\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState> </adf-widget></div> <div ng-if=\"editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows\" class=\"text-center js-remove\" ng-class=\"{\'empty-placeholder\': options.singleWidgetMode && !column.widgets.length}\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
+angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'widgets-warning\': options.singleWidgetMode && column.widgets.length > 1, \'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows, \'disable-put\': editMode && !sortableConfig.group.put}\"> <adf-widget ng-repeat=\"definition in column.widgets track by $index\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState> </adf-widget></div> <div ng-if=\"editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows\" class=\"text-center js-remove\" ng-class=\"{\'empty-placeholder\': options.singleWidgetMode && !column.widgets.length}\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
 $templateCache.put("../src/templates/dashboard-column.html","<div adf-id={{column.cid}} class=column ng-class=column.styleClass ng-model=column.widgets> <adf-widget ng-repeat=\"definition in column.widgets\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState>  </adf-widget></div> ");
 $templateCache.put("../src/templates/dashboard-edit.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Edit Dashboard</h4> </div> <div class=modal-body> <form role=form>     <div class=form-group> <label>Structure</label> <div class=radio ng-repeat=\"(key, structure) in structures\"> <label> <input type=radio value={{key}} ng-model=model.structure ng-change=\"changeStructure(key, structure)\"> {{key}} </label> </div> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/dashboard-row.html","<div class=row ng-class=row.styleClass>  </div> ");
 $templateCache.put("../src/templates/dashboard-title-custom.html","<div class=\"row dashboard-nav\"> <div class=col-md-8> <h1 ng-if=editMode> {{model.title}} </h1> </div> <div class=col-md-4> <ul style=\"font-size: 16px\" class=\"nav navbar-nav navbar-right dashboard-menu\"> <li ng-if=editMode> <a href title=\"edit dashboard\" ng-click=editDashboardDialog()> <i class=\"fa fa-sliders\"></i> <p>Settings</p> </a> </li> <li ng-if=editMode> <a href title=\"{{editMode ? \'save changes\' : \'enable edit mode\'}}\" ng-click=toggleEditMode()> <i class=fa x-ng-class=\"{\'fa-pencil\' : !editMode, \'fa-floppy-o\' : editMode}\"></i> <p ng-if=editMode>Save</p> <p ng-if=!editMode>Edit</p> </a> </li> <li ng-if=editMode> <a href title=\"undo changes\" ng-click=cancelEditMode()> <i class=\"fa fa-undo adf-flip\"></i> <p>Undo</p> </a> </li> </ul> </div> </div> ");
 $templateCache.put("../src/templates/dashboard-title.html","<h1> {{model.title}} <span style=\"font-size: 16px\" class=pull-right> <a href ng-if=editMode title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"glyphicon glyphicon-plus-sign\"></i> </a> <a href ng-if=editMode title=\"edit dashboard\" ng-click=editDashboardDialog()> <i class=\"glyphicon glyphicon-cog\"></i> </a> <a href ng-if=options.editable title=\"{{editMode ? \'save changes\' : \'enable edit mode\'}}\" ng-click=toggleEditMode()> <i class=glyphicon x-ng-class=\"{\'glyphicon-edit\' : !editMode, \'glyphicon-save\' : editMode}\"></i> </a> <a href ng-if=editMode title=\"undo changes\" ng-click=cancelEditMode()> <i class=\"glyphicon glyphicon-repeat adf-flip\"></i> </a> </span> </h1> ");
-$templateCache.put("../src/templates/dashboard.html","<div class=dashboard-container>  <div class=\"dashboard container-fluid\" x-ng-class=\"{\'edit\' : editMode}\"> <adf-dashboard-row row=row adf-model=model options=options ng-repeat=\"row in model.rows\" edit-mode=editMode continuous-edit-mode=continuousEditMode> </adf-dashboard-row></div> </div> ");
+$templateCache.put("../src/templates/dashboard.html","<div class=dashboard-container>  <div class=\"dashboard container-fluid\" x-ng-class=\"{\'edit\' : editMode}\"> <adf-dashboard-row row=row adf-model=model options=options ng-repeat=\"row in model.rows track by $index\" edit-mode=editMode continuous-edit-mode=continuousEditMode> </adf-dashboard-row></div> </div> ");
 $templateCache.put("../src/templates/widget-add.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Add new widget</h4> </div> <div class=modal-body> <div style=\"display: inline-block;\"> <dl class=dl-horizontal> <dt ng-repeat-start=\"(key, widget) in widgets\"> <a href ng-click=addWidget(key)> {{widget.title}} </a> </dt> <dd ng-repeat-end ng-if=widget.description> {{widget.description}} </dd> </dl> <div ng-if=noWidgetsAvailable>No widgets available for selected placeholder</div> </div> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/widget-delete.html","<div class=modal-header> <h4 class=modal-title>Delete {{widget.title}}</h4> </div> <div class=modal-body> <form role=form> <div class=form-group> <label for=widgetTitle>Are you sure you want to delete this widget ?</label> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Close</button> <button type=button class=\"btn btn-primary\" ng-click=deleteDialog()>Delete</button> </div> ");
 $templateCache.put("../src/templates/widget-edit.html","<form name=widgetEditForm novalidate role=form ng-submit=saveDialog()> <div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>{{widget.title}}</h4> </div> <div class=modal-body> <div class=\"alert alert-danger\" role=alert ng-show=validationError> <strong>Apply error:</strong> {{validationError}} </div> <div class=form-group> <label for=widgetTitle>Title</label> <input type=text class=form-control id=widgetTitle ng-model=definition.title placeholder=\"Enter title\" required> </div> <div ng-if=widget.edit> <adf-widget-content model=definition content=widget.edit> </adf-widget-content></div> </div> <div class=modal-footer> <button type=button class=\"btn btn-default\" ng-click=closeDialog()>Cancel</button> <input type=submit class=\"btn btn-primary\" ng-disabled=widgetEditForm.$invalid value=Apply> </div> </form> ");

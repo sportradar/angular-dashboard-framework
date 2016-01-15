@@ -265,8 +265,8 @@ angular.module('adf')
           }
         });
 
-        $scope.$on('widgetConfigChanged', function() {
-          $scope.$emit('dashboardWidgetConfigChanged', $scope.config, $scope.definition.wid, $scope.col.cid);
+        $scope.$on('widgetConfigUpdated', function() {
+          $scope.$emit('dashboardWidgetConfigUpdated', $scope.config, $scope.definition.wid, $scope.col.cid);
         });
 
         $scope.widgetClasses = function(w, definition, widgetState){
