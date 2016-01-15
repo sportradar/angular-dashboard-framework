@@ -5,7 +5,7 @@
     <adf-dashboard-row row="row"
                        adf-model="model"
                        options="options"
-                       ng-repeat="row in model.rows"
+                       ng-repeat="row in model.rows track by $index"
                        edit-mode="editMode"
                        continuous-edit-mode="continuousEditMode"
     />

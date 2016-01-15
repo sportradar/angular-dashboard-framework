@@ -108,7 +108,7 @@ angular.module('adf')
             targetColumn.widgets.splice(evt.newIndex, 0, widget);
 
             $rootScope.$broadcast('adfWidgetAddedToColumn');
-            $rootScope.$broadcast('notifyDashboardWidgetChanged');
+            $scope.$emit('dashboardWidgetChanged');
           });
         } else {
           $log.warn('could not find widget with id ' + wid);

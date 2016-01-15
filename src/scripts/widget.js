@@ -127,7 +127,7 @@ angular.module('adf')
           }
           $element.remove();
           $rootScope.$broadcast('adfWidgetRemovedFromColumn');
-          $rootScope.$broadcast('notifyDashboardWidgetChanged');
+          $scope.$emit('dashboardWidgetChanged');
         };
 
         $scope.remove = function() {
@@ -263,6 +263,10 @@ angular.module('adf')
           if (dashboard.idEquals($scope.definition.wid, widget.wid)){
             $scope.edit();
           }
+        });
+
+        $scope.$on('widgetConfigChanged', function() {
+          $scope.$emit('dashboardWidgetConfigChanged', $scope.config, $scope.definition.wid, $scope.col.cid);
         });
 
         $scope.widgetClasses = function(w, definition, widgetState){

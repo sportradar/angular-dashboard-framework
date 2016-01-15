@@ -249,6 +249,44 @@ angular.module('adf')
       }, 200);
     }
 
+    /**
+     * finds a widget by its id in the column
+     */
+    function findWidget(column, index){
+      var widget = null;
+      for (var i=0; i<column.widgets.length; i++){
+        var w = column.widgets[i];
+        if (dashboard.idEquals(w.wid,index)){
+          widget = w;
+          break;
+        }
+      }
+      return widget;
+    }
+
+    /**
+     * finds a column by its id in the model
+     */
+    function findColumn(model, index){
+      var column = null;
+      for (var i=0; i<model.rows.length; i++){
+        var r = model.rows[i];
+        for (var j=0; j<r.columns.length; j++){
+          var c = r.columns[j];
+          if (dashboard.idEquals(c.cid, index)){
+            column = c;
+            break;
+          } else if (c.rows){
+            column = findColumn(c, index);
+          }
+        }
+        if (column){
+          break;
+        }
+      }
+      return column;
+    }
+
     function setExternalApiFunctions(scope) {
       var api = {};
 
@@ -352,7 +390,7 @@ angular.module('adf')
           }
 
           if (!$scope.editMode){
-            $rootScope.$broadcast('adfDashboardChanged', name, model);
+             $scope.triggerDashboardChanged();
           }
         };
 
@@ -449,7 +487,7 @@ angular.module('adf')
               openEditMode($scope, w);
             }
 
-            $rootScope.$broadcast('notifyDashboardWidgetChanged');
+            $scope.triggerDashboardChanged();
           };
           addScope.closeDialog = function(){
             // close and destroy
@@ -468,7 +506,7 @@ angular.module('adf')
 
         $scope.saveDashboard = function() {
           $scope.editMode = false;
-          $rootScope.$broadcast('adfDashboardChanged', name, model);
+          $scope.triggerDashboardChanged();
           return false;
         };
 
@@ -486,9 +524,28 @@ angular.module('adf')
           $scope.addWidgetDialog(column);
         });
 
-        $scope.$on('notifyDashboardWidgetChanged', function() {
-          // Trigger auto save
-          $rootScope.$broadcast('adfDashboardChanged', name, model);
+        $scope.$on('dashboardWidgetChanged', function() {
+          // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
+          event.stopPropagation();
+          
+          $scope.triggerDashboardChanged();
+        });
+
+        $scope.$on('dashboardWidgetConfigChanged', function(event, config, wid, cid) {
+          // the event should only be caught by dashboard directive, that's why it is not propagated further up the chain
+          event.stopPropagation();
+
+          // we need to overwrite config object before saving to database, otherwise it is set after saving so the changed data is lost
+          if(cid) {
+            var col = findColumn(model, cid);
+            if(wid && col) {
+              var widget = findWidget(col, wid);
+              if(widget) {
+                widget.config = config;
+                $scope.triggerDashboardChanged();
+              }
+            }
+          }
         });
 
         setExternalApiFunctions($scope);
