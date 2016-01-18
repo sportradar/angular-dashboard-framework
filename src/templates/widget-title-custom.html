@@ -9,7 +9,7 @@
     <div class="pull-right">
 
       <!-- widget filters -->
-      <button class="btn btn-link" title="filter widget data" ng-class="{ 'disabled': editMode }" ng-click="widgetState.showFilters = !widgetState.showFilters" ng-if="widget.filter">
+      <button class="btn btn-link" title="filter widget data" ng-class="{ 'disabled': editMode || widgetSharedData.layoutEditMode }" ng-click="widgetState.showFilters = !widgetState.showFilters" ng-if="widget.filter">
         <i class="fa fa-filter"></i>
       </button>
 
