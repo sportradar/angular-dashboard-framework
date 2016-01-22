@@ -1668,6 +1668,13 @@ angular.module('adf')
           $scope.$emit('dashboardWidgetConfigUpdated', $scope.config, $scope.definition.wid, $scope.col.cid);
         });
 
+        $scope.$watch('widgetState.showFilters', function(showFilters){
+          // override definition.config when toggling filters content, to prevent loosing reference to the latest saved $scope.config object
+          if(showFilters) {
+            $scope.definition.config = $scope.config;
+          }
+        });
+
         $scope.widgetClasses = function(w, definition, widgetState){
           var classes = [];
           classes.push('widget-' + definition.type);
