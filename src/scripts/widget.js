@@ -25,7 +25,7 @@
 'use strict';
 
 angular.module('adf')
-  .directive('adfWidget', function($injector, $q, $log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
+  .directive('adfWidget', function(_, $injector, $q, $log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
 
     function preLink($scope) {
       var definition = $scope.definition;
@@ -120,7 +120,8 @@ angular.module('adf')
         var deleteWidget = function() {
           var column = $scope.col;
           if (column) {
-            var index = column.widgets.indexOf(definition);
+            //var index = column.widgets.indexOf(definition);
+            var index = _.findIndex(column.widgets, function(w) { return w.wid === definition.wid; });
             if (index >= 0) {
               column.widgets.splice(index, 1);
             }
