@@ -61,6 +61,7 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
+    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
@@ -123,7 +124,6 @@ angular.module('adf')
         });
       }
     }
-    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -1424,7 +1424,7 @@ angular.module('adf')
 
 
 angular.module('adf')
-  .directive('adfWidget', ["$injector", "$q", "$log", "$uibModal", "$rootScope", "dashboard", "adfTemplatePath", function($injector, $q, $log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
+  .directive('adfWidget', ["_", "$injector", "$q", "$log", "$uibModal", "$rootScope", "dashboard", "adfTemplatePath", function(_, $injector, $q, $log, $uibModal, $rootScope, dashboard, adfTemplatePath) {
 
     function preLink($scope) {
       var definition = $scope.definition;
@@ -1519,7 +1519,8 @@ angular.module('adf')
         var deleteWidget = function() {
           var column = $scope.col;
           if (column) {
-            var index = column.widgets.indexOf(definition);
+            //var index = column.widgets.indexOf(definition);
+            var index = _.findIndex(column.widgets, function(w) { return w.wid === definition.wid; });
             if (index >= 0) {
               column.widgets.splice(index, 1);
             }
