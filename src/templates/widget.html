@@ -1,5 +1,9 @@
 <div adf-id="{{definition.wid}}" adf-widget-type="{{definition.type}}" ng-class="widgetClasses(widget, definition, widgetState)" class="widget panel panel-default">
 
+  <div class="widget-growl-messages">
+    <div growl reference={{definition.wid}} inline="true"></div>
+  </div>
+
   <div class="panel-heading clearfix" ng-if="!widget.frameless || editMode">
     <div ng-include src="widget.titleTemplateUrl" ng-class="{'adf-move':editMode}"></div>
   </div>

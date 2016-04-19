@@ -100,6 +100,7 @@ angular.module('adf')
           if (!$scope.widgetState) {
             $scope.widgetState = {};
             $scope.widgetState.isCollapsed= (w.collapsed === true) ? w.collapsed : false;
+            $scope.widgetState.configBeingEdited = false;
           }
 
           $scope.widgetState.isValidWidth = !w.minSize || $scope.col.width >= w.minSize;
@@ -270,12 +271,27 @@ angular.module('adf')
           $scope.$emit('dashboardWidgetConfigUpdated', $scope.config, $scope.definition.wid, $scope.col.cid);
         });
 
+        $scope.$on('adfWidgetConfigChanged', function(event, id){
+          var definition = $scope.definition;
+
+          if(definition.wid === id){
+            $scope.reload();
+          }
+        });
+
+        $scope.$on('adfEditWidgetConfigStarted', function(event, id){
+          var definition = $scope.definition;
+
+          $scope.widgetState.configBeingEdited = definition.wid === id;
+        });
+
         $scope.$watch('widgetState.showFilters', function(showFilters){
           // override definition.config when toggling filters content, to prevent loosing reference to the latest saved $scope.config object
           if(showFilters) {
             $scope.definition.config = $scope.config;
           }
         });
+
 
         $scope.widgetClasses = function(w, definition, widgetState){
           var classes = [];
@@ -290,6 +306,10 @@ angular.module('adf')
           //}
           if (!widgetState.isValidWidth) {
             classes.push('widgets-warning');
+          }
+
+          if (widgetState.configBeingEdited) {
+            classes.push('widget-being-edited');
           }
 
           return classes;

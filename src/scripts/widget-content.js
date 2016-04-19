@@ -155,6 +155,9 @@ angular.module('adf')
         $scope.$on('widgetReload', function() {
           currentScope = compileWidget($scope, $element, currentScope);
         });
+        $scope.onEditConfig = function(){
+          $scope.$emit('adfEditWidgetConfig', $scope.model.config, $scope.model.wid);
+        };
       }
     };
 

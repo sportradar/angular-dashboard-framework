@@ -287,6 +287,38 @@ angular.module('adf')
       return column;
     }
 
+    /**
+     * Finds widget by id and changes its config
+     */
+    function changeConfigForWidgetById($scope, wid, config){
+      var model = $scope.model,
+        rows;
+
+      rows = model.rows;
+
+      if(rows){
+        angular.forEach(rows, function(row){
+          var columns = row.columns;
+
+          if(columns){
+
+            angular.forEach(columns, function(column){
+              var widgets = column.widgets;
+
+              if(widgets){
+                angular.forEach(widgets, function (widget, key) {
+
+                  if( widget.wid === wid ){
+                    widget.config = config;
+                  }
+                });
+              }
+            });
+          }
+        });
+      }
+    }
+
     function setExternalApiFunctions(scope) {
       var api = {};
 
@@ -311,6 +343,31 @@ angular.module('adf')
       };
 
       api.triggerDashboardChanged = function() {
+        scope.triggerDashboardChanged();
+      };
+
+      api.addNewWidget = function(config, type, name) {
+        var defConfig = createConfiguration(type);
+
+        var widgetName = name ? name : '',
+          model = scope.model,
+          widget = {
+          type: type,
+          config: angular.extend({}, defConfig, config),
+          wid: dashboard.id()
+          // title: widgetName
+        };
+
+        addNewWidgetToModel(model, widget, widgetName);
+
+        scope.triggerDashboardChanged();
+      };
+
+      api.changeWidgetConfig = function(wid, config) {
+        changeConfigForWidgetById(scope, wid, config);
+
+        scope.$broadcast('adfWidgetConfigChanged', wid);
+
         scope.triggerDashboardChanged();
       };
 
