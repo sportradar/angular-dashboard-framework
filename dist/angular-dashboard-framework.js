@@ -705,8 +705,8 @@ angular.module('adf')
           widget = {
           type: type,
           config: angular.extend({}, defConfig, config),
-          wid: dashboard.id()
-          // title: widgetName
+          wid: dashboard.id(),
+          title: widgetName
         };
 
         addNewWidgetToModel(model, widget, widgetName);
@@ -883,7 +883,8 @@ angular.module('adf')
           addScope.addWidget = function(widget){
             var w = {
               type: widget,
-              config: createConfiguration(widget)
+              config: createConfiguration(widget),
+              wid: dashboard.id()
             };
             addNewWidgetToModel(model, w, name, column);
             // close and destroy
