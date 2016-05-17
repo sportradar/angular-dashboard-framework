@@ -10,9 +10,9 @@
 
   <div ng-class="{'panel-body':!widget.frameless || editMode}" uib-collapse="widgetState.isCollapsed">
     <div ng-if="widget.filter && widgetState.showFilters" class="widget-filter">
-      <adf-widget-content model="definition" content="widget.filter" widget-shared-data="widgetSharedData"/>
+      <adf-widget-content model="definition" content="widget.filter" widget-shared-data="widgetSharedData" dash-id="dashId" />
     </div>
-    <adf-widget-content model="definition" content="widget" widget-shared-data="widgetSharedData" />
+    <adf-widget-content model="definition" content="widget" widget-shared-data="widgetSharedData" dash-id="dashId" />
   </div>
 
 </div>

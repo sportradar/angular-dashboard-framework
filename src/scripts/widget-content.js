@@ -89,7 +89,8 @@ angular.module('adf')
         $scope: templateScope,
         widget: model,
         config: model.config,
-        widgetSharedData: $scope.widgetSharedData || {}
+        widgetSharedData: $scope.widgetSharedData || {},
+        dashId: $scope.dashId
       };
 
       // get resolve promises from content object
@@ -145,7 +146,8 @@ angular.module('adf')
       scope: {
         model: '=',
         content: '=',
-        widgetSharedData: '='
+        widgetSharedData: '=',
+        dashId: '='
       },
       link: function($scope, $element) {
         var currentScope = compileWidget($scope, $element, null);

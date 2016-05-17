@@ -253,7 +253,8 @@ angular.module('adf')
         editMode: '=',
         options: '=',
         widgetState: '=',
-        columnState: '='
+        columnState: '=',
+        dashId: '='
       },
       controller: function($scope) {
 
