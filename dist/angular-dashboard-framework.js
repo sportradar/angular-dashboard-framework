@@ -102,6 +102,7 @@ angular.module('adf')
           },
           onEnd: function () {
             $rootScope.$broadcast('widgetMoveEnd');
+            $scope.$emit('dashboardWidgetChanged');
           },
           onAdd: function () {
             $rootScope.$broadcast('adfWidgetAddedToColumn');
@@ -120,7 +121,6 @@ angular.module('adf')
 
         $scope.$on('widgetMoveEnd', function () {
           $scope.sortableConfig.group.put = true;
-          $scope.$emit('dashboardWidgetChanged');
         });
       }
     }
@@ -1453,6 +1453,10 @@ angular.module('adf')
         $scope.onEditConfig = function(){
           $scope.$emit('adfEditWidgetConfig', $scope.model.config, $scope.model.wid);
         };
+        $scope.onUpdateConfig = function(config){
+          $scope.model.config = config;
+          $scope.$emit('widgetConfigUpdated');
+        };
       }
     };
 
@@ -1813,7 +1817,7 @@ angular.module('adf')
 
   }]);
 
-angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'widgets-warning\': options.singleWidgetMode && column.widgets.length > 1, \'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows, \'disable-put\': editMode && !sortableConfig.group.put}\"> <adf-widget ng-repeat=\"definition in column.widgets track by $index\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState> </adf-widget></div> <div ng-if=\"editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows\" class=\"text-center js-remove\" ng-class=\"{\'empty-placeholder\': options.singleWidgetMode && !column.widgets.length}\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
+angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'widgets-warning\': options.singleWidgetMode && column.widgets.length > 1, \'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows, \'disable-put\': editMode && !sortableConfig.group.put}\"> <adf-widget ng-repeat=\"definition in column.widgets track by definition.wid\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState> </adf-widget></div> <div ng-if=\"editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows\" class=\"text-center js-remove\" ng-class=\"{\'empty-placeholder\': options.singleWidgetMode && !column.widgets.length}\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
 $templateCache.put("../src/templates/dashboard-column.html","<div adf-id={{column.cid}} class=column ng-class=column.styleClass ng-model=column.widgets> <adf-widget ng-repeat=\"definition in column.widgets\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState>  </adf-widget></div> ");
 $templateCache.put("../src/templates/dashboard-edit.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Edit Dashboard</h4> </div> <div class=modal-body> <form role=form>     <div class=form-group> <label>Structure</label> <div class=radio ng-repeat=\"(key, structure) in structures\"> <label> <input type=radio value={{key}} ng-model=model.structure ng-change=\"changeStructure(key, structure)\"> {{key}} </label> </div> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/dashboard-row.html","<div class=row ng-class=row.styleClass>  </div> ");

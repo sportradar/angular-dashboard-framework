@@ -158,6 +158,10 @@ angular.module('adf')
         $scope.onEditConfig = function(){
           $scope.$emit('adfEditWidgetConfig', $scope.model.config, $scope.model.wid);
         };
+        $scope.onUpdateConfig = function(config){
+          $scope.model.config = config;
+          $scope.$emit('widgetConfigUpdated');
+        };
       }
     };
 

@@ -68,6 +68,7 @@ angular.module('adf')
           },
           onEnd: function () {
             $rootScope.$broadcast('widgetMoveEnd');
+            $scope.$emit('dashboardWidgetChanged');
           },
           onAdd: function () {
             $rootScope.$broadcast('adfWidgetAddedToColumn');
@@ -86,7 +87,6 @@ angular.module('adf')
 
         $scope.$on('widgetMoveEnd', function () {
           $scope.sortableConfig.group.put = true;
-          $scope.$emit('dashboardWidgetChanged');
         });
       }
     }
