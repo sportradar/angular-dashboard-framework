@@ -641,18 +641,16 @@ angular.module('adf')
     /**
      * Finds widget by id and changes its config
      */
-    function changeConfigForWidgetById($scope, wid, config){
+    function changeConfigForWidgetById($scope, wid, config, widgetType, widgetTitle){
       var model = $scope.model,
-        rows;
-
-      rows = model.rows;
+        rows = model.rows,
+        widgetForUpdate = null;
 
       if(rows){
         angular.forEach(rows, function(row){
           var columns = row.columns;
 
           if(columns){
-
             angular.forEach(columns, function(column){
               var widgets = column.widgets;
 
@@ -660,13 +658,30 @@ angular.module('adf')
                 angular.forEach(widgets, function (widget, key) {
 
                   if( widget.wid === wid ){
-                    widget.config = config;
+                    widgetForUpdate = widget;
                   }
                 });
               }
             });
           }
         });
+      }
+
+      if (widgetForUpdate) {
+        // If widgetType is defined and it is not equal to previous type, create config for new type of widget.
+        if (widgetType && widgetType !== widgetForUpdate.type) {
+          var defConfig = createConfiguration(widgetType);
+          widgetForUpdate.config = angular.extend({}, defConfig, config);
+          widgetForUpdate.type = widgetType;
+          widgetForUpdate.wid = dashboard.id();
+        }
+        else {
+          widgetForUpdate.config = angular.extend({}, widgetForUpdate.config, config);
+        }
+
+        if (widgetTitle) {
+          widgetForUpdate.title = widgetTitle;
+        }
       }
     }
 
@@ -714,8 +729,8 @@ angular.module('adf')
         scope.triggerDashboardChanged();
       };
 
-      api.changeWidgetConfig = function(wid, config) {
-        changeConfigForWidgetById(scope, wid, config);
+      api.changeWidgetConfig = function(wid, config, type, title) {
+        changeConfigForWidgetById(scope, wid, config, type, title);
 
         scope.$broadcast('adfWidgetConfigChanged', wid);
 
