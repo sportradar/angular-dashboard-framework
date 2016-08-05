@@ -1,6 +1,6 @@
 {
   "name": "angular-dashboard-framework",
-  "version": "0.15.5",
+  "version": "0.15.6",
   "license": "MIT",
   "authors": [
     "Sebastian Sdorra"
@@ -40,7 +40,7 @@
     "angular": ">=1.2",
     "angular-bootstrap": "^0.14.3",
     "bootstrap": "^3.3.6",
-    "Sortable": "^1.2.1"
+    "Sortable": "git://github.com/bojanbass/Sortable.git"
   },
   "devDependencies": {
     "angular-mocks": ">=1.2",
