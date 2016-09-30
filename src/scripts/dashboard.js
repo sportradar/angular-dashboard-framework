@@ -58,16 +58,9 @@ angular.module('adf')
       }
     }
 
-    function widgetFilter(widget, column){
-      return !widget.minSize || column.width >= widget.minSize;
-    }
-
-    function copyWidgets(source, target, warnings) {
+    function copyWidgets(source, target) {
       if ( source.widgets && source.widgets.length > 0 ){
         var w = source.widgets.shift();
-        if(warnings.widgetExceedsMinSize === false && !widgetFilter(w, target)){
-          warnings.widgetExceedsMinSize = true;
-        }
         while (w){
           target.widgets.push(w);
           w = source.widgets.shift();
@@ -76,12 +69,12 @@ angular.module('adf')
     }
 
     /**
-    * Copy widget from old columns to the new model
-    * @param object root the model
-    * @param array of columns
-    * @param counter
-    */
-    function fillStructure(root, columns, counter, warnings) {
+     * Copy widget from old columns to the new model
+     * @param object root the model
+     * @param array of columns
+     * @param counter
+     */
+    function fillStructure(root, columns, counter) {
       counter = counter || 0;
 
       if (angular.isDefined(root.rows)) {
@@ -96,12 +89,9 @@ angular.module('adf')
             // if a column exist at the counter index, copy over the column
             if (angular.isDefined(columns[counter])) {
               // do not add widgets to a column, which uses nested rows
-              if (!angular.isDefined(column.rows)){
-                copyWidgets(columns[counter], column, warnings);
+              if (angular.isUndefined(column.rows)){
+                copyWidgets(columns[counter], column);
                 counter++;
-                if(warnings && warnings.oneWidgetPerColumn === false && column.widgets.length > 1){
-                  warnings.oneWidgetPerColumn = true;
-                }
               }
             }
 
@@ -134,29 +124,14 @@ angular.module('adf')
       return columns;
     }
 
-    function changeStructure(model, structure, scope){
+    function changeStructure(model, structure){
       var columns = readColumns(model);
       var counter = 0;
-      var warningMessages = [];
-      var warnings = {
-        widgetExceedsMinSize: false,
-        oneWidgetPerColumn: false
-      };
 
       model.rows = angular.copy(structure.rows);
 
       while ( counter < columns.length ){
-        counter = fillStructure(model, columns, counter, warnings);
-      }
-
-      if(warnings.widgetExceedsMinSize) {
-        warningMessages.push('At least one placeholder was too small for a widget!');
-      }
-      if(scope.singleWidgetMode && warnings.oneWidgetPerColumn) {
-        warningMessages.push('Multiple widgets were copied to a single placeholder!');
-      }
-      if(warningMessages.length) {
-        scope.$emit('changeStructureWarning', warningMessages);
+        counter = fillStructure(model, columns, counter);
       }
     }
 
@@ -403,7 +378,6 @@ angular.module('adf')
         maximizable: '@',
         adfModel: '=',
         adfWidgetFilter: '=',
-        singleWidgetMode: '@',
         externalApi: '='
       },
       controller: function($scope){
@@ -630,8 +604,7 @@ angular.module('adf')
           editable: true,
           enableConfirmDelete: stringToBoolean($attr.enableconfirmdelete),
           maximizable: stringToBoolean($attr.maximizable),
-          collapsible: stringToBoolean($attr.collapsible),
-          singleWidgetMode: stringToBoolean($attr.singleWidgetMode)
+          collapsible: stringToBoolean($attr.collapsible)
         };
         if (angular.isDefined($attr.editable)){
           options.editable = stringToBoolean($attr.editable);

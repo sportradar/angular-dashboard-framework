@@ -61,21 +61,11 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
-    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
         isHidden: false,
         isExpanded: false
-      };
-
-      var allowPutWidgetIntoColumn = function (widget, sourceColumn) {
-        if ($scope.column === sourceColumn || !$scope.options.singleWidgetMode) {return true;}
-
-        var allowPutWidget = !widget || !widget.minSize || $scope.column.width >= widget.minSize;
-        var columnHasWidgets = $scope.column.widgets.length ? false : true;
-
-        return columnHasWidgets && allowPutWidget;
       };
 
       $scope.addWidgetDialog = function () {
@@ -91,17 +81,12 @@ angular.module('adf')
       if (!angular.isDefined($scope.column.rows)) {
         $scope.sortableConfig = {
           group: {
-            name: 'widgets',
-            put: true
+            name: 'widgets'
           },
           handle: '.adf-move',
           ghostClass: 'placeholder',
           animation: 150,
-          onStart: function (evt) {
-            $rootScope.$broadcast('widgetMoveStart', evt.model, $scope.column);
-          },
           onEnd: function () {
-            $rootScope.$broadcast('widgetMoveEnd');
             $scope.$emit('dashboardWidgetChanged');
           },
           onAdd: function () {
@@ -114,16 +99,9 @@ angular.module('adf')
             $rootScope.$broadcast('adfWidgetMovedInColumn');
           }
         };
-
-        $scope.$on('widgetMoveStart', function (evt, widget, sourceColumn) {
-          $scope.sortableConfig.group.put = allowPutWidgetIntoColumn(widget, sourceColumn);
-        });
-
-        $scope.$on('widgetMoveEnd', function () {
-          $scope.sortableConfig.group.put = true;
-        });
       }
     }
+    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -409,16 +387,9 @@ angular.module('adf')
       }
     }
 
-    function widgetFilter(widget, column){
-      return !widget.minSize || column.width >= widget.minSize;
-    }
-
-    function copyWidgets(source, target, warnings) {
+    function copyWidgets(source, target) {
       if ( source.widgets && source.widgets.length > 0 ){
         var w = source.widgets.shift();
-        if(warnings.widgetExceedsMinSize === false && !widgetFilter(w, target)){
-          warnings.widgetExceedsMinSize = true;
-        }
         while (w){
           target.widgets.push(w);
           w = source.widgets.shift();
@@ -427,12 +398,12 @@ angular.module('adf')
     }
 
     /**
-    * Copy widget from old columns to the new model
-    * @param object root the model
-    * @param array of columns
-    * @param counter
-    */
-    function fillStructure(root, columns, counter, warnings) {
+     * Copy widget from old columns to the new model
+     * @param object root the model
+     * @param array of columns
+     * @param counter
+     */
+    function fillStructure(root, columns, counter) {
       counter = counter || 0;
 
       if (angular.isDefined(root.rows)) {
@@ -447,12 +418,9 @@ angular.module('adf')
             // if a column exist at the counter index, copy over the column
             if (angular.isDefined(columns[counter])) {
               // do not add widgets to a column, which uses nested rows
-              if (!angular.isDefined(column.rows)){
-                copyWidgets(columns[counter], column, warnings);
+              if (angular.isUndefined(column.rows)){
+                copyWidgets(columns[counter], column);
                 counter++;
-                if(warnings && warnings.oneWidgetPerColumn === false && column.widgets.length > 1){
-                  warnings.oneWidgetPerColumn = true;
-                }
               }
             }
 
@@ -485,29 +453,14 @@ angular.module('adf')
       return columns;
     }
 
-    function changeStructure(model, structure, scope){
+    function changeStructure(model, structure){
       var columns = readColumns(model);
       var counter = 0;
-      var warningMessages = [];
-      var warnings = {
-        widgetExceedsMinSize: false,
-        oneWidgetPerColumn: false
-      };
 
       model.rows = angular.copy(structure.rows);
 
       while ( counter < columns.length ){
-        counter = fillStructure(model, columns, counter, warnings);
-      }
-
-      if(warnings.widgetExceedsMinSize) {
-        warningMessages.push('At least one placeholder was too small for a widget!');
-      }
-      if(scope.singleWidgetMode && warnings.oneWidgetPerColumn) {
-        warningMessages.push('Multiple widgets were copied to a single placeholder!');
-      }
-      if(warningMessages.length) {
-        scope.$emit('changeStructureWarning', warningMessages);
+        counter = fillStructure(model, columns, counter);
       }
     }
 
@@ -754,7 +707,6 @@ angular.module('adf')
         maximizable: '@',
         adfModel: '=',
         adfWidgetFilter: '=',
-        singleWidgetMode: '@',
         externalApi: '='
       },
       controller: ["$scope", function($scope){
@@ -981,8 +933,7 @@ angular.module('adf')
           editable: true,
           enableConfirmDelete: stringToBoolean($attr.enableconfirmdelete),
           maximizable: stringToBoolean($attr.maximizable),
-          collapsible: stringToBoolean($attr.collapsible),
-          singleWidgetMode: stringToBoolean($attr.singleWidgetMode)
+          collapsible: stringToBoolean($attr.collapsible)
         };
         if (angular.isDefined($attr.editable)){
           options.editable = stringToBoolean($attr.editable);
@@ -1518,8 +1469,6 @@ angular.module('adf')
             definition.title = w.title;
           }
 
-          definition.minSize = w.minSize;
-
           //if (!definition.titleTemplateUrl) {
           //  definition.titleTemplateUrl = adfTemplatePath + 'widget-title.html';
           //  if (w.titleTemplateUrl) {
@@ -1583,9 +1532,6 @@ angular.module('adf')
             $scope.widgetState.isCollapsed= (w.collapsed === true) ? w.collapsed : false;
             $scope.widgetState.configBeingEdited = false;
           }
-
-          $scope.widgetState.isValidWidth = !w.minSize || $scope.col.width >= w.minSize;
-
         } else {
           $log.warn('could not find widget ' + definition.type);
         }
@@ -1783,13 +1729,6 @@ angular.module('adf')
             classes.push(definition.styleClass);
           }
 
-          //if (!w.frameless || $scope.editMode){
-          //  classes += ' panel panel-default';
-          //}
-          if (!widgetState.isValidWidth) {
-            classes.push('widgets-warning');
-          }
-
           if (widgetState.configBeingEdited) {
             classes.push('widget-being-edited');
           }
@@ -1835,7 +1774,7 @@ angular.module('adf')
 
   }]);
 
-angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'widgets-warning\': options.singleWidgetMode && column.widgets.length > 1, \'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows, \'disable-put\': editMode && !sortableConfig.group.put}\"> <adf-widget ng-repeat=\"definition in column.widgets track by definition.wid\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState dash-id=adfModel._id> </adf-widget></div> <div ng-if=\"editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows\" class=\"text-center js-remove\" ng-class=\"{\'empty-placeholder\': options.singleWidgetMode && !column.widgets.length}\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
+angular.module("adf").run(["$templateCache", function($templateCache) {$templateCache.put("../src/templates/dashboard-column-custom.html","<div adf-id={{column.cid}} class=\"dashboardPlaceholder column {{column.styleClass}}\" ng-class=\"{\'full-screen\': columnState.isExpanded }\" ng-model=column.widgets ng-hide=columnState.isHidden> <div ng-sortable=sortableConfig class=adf-widgets adf-id={{column.cid}} ng-class=\"{\'adf-nested\':column.rows}\"> <adf-widget ng-repeat=\"definition in column.widgets track by definition.wid\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState column-state=columnState dash-id=adfModel._id> </adf-widget></div> <div ng-if=\"editMode && !column.rows\" class=\"text-center js-remove\"> <a href title=\"add new widget\" ng-click=addWidgetDialog()> <i class=\"fa fa-plus fa-5x\"></i> <p>Add widget</p> </a> </div>  </div> ");
 $templateCache.put("../src/templates/dashboard-column.html","<div adf-id={{column.cid}} class=column ng-class=column.styleClass ng-model=column.widgets> <adf-widget ng-repeat=\"definition in column.widgets\" definition=definition column=column edit-mode=editMode options=options widget-state=widgetState>  </adf-widget></div> ");
 $templateCache.put("../src/templates/dashboard-edit.html","<div class=modal-header> <button type=button class=close ng-click=closeDialog() aria-hidden=true>&times;</button> <h4 class=modal-title>Edit Dashboard</h4> </div> <div class=modal-body> <form role=form>     <div class=form-group> <label>Structure</label> <div class=radio ng-repeat=\"(key, structure) in structures\"> <label> <input type=radio value={{key}} ng-model=model.structure ng-change=\"changeStructure(key, structure)\"> {{key}} </label> </div> </div> </form> </div> <div class=modal-footer> <button type=button class=\"btn btn-primary\" ng-click=closeDialog()>Close</button> </div> ");
 $templateCache.put("../src/templates/dashboard-row.html","<div class=row ng-class=row.styleClass>  </div> ");

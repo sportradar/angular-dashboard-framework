@@ -1,6 +1,13 @@
-<div adf-id="{{column.cid}}" class="dashboardPlaceholder column {{column.styleClass}}" ng-class="{'widgets-warning': options.singleWidgetMode && column.widgets.length > 1, 'full-screen': columnState.isExpanded }" ng-model="column.widgets" ng-hide="columnState.isHidden">
+<div adf-id="{{column.cid}}"
+     class="dashboardPlaceholder column {{column.styleClass}}"
+     ng-class="{'full-screen': columnState.isExpanded }"
+     ng-model="column.widgets"
+     ng-hide="columnState.isHidden">
 
-  <div ng-sortable="sortableConfig" class="adf-widgets" adf-id="{{column.cid}}" ng-class="{'adf-nested':column.rows, 'disable-put': editMode && !sortableConfig.group.put}">
+  <div ng-sortable="sortableConfig"
+       class="adf-widgets"
+       adf-id="{{column.cid}}"
+       ng-class="{'adf-nested':column.rows}">
     <adf-widget ng-repeat="definition in column.widgets track by definition.wid"
                 definition="definition"
                 column="column"
@@ -12,7 +19,8 @@
       />
   </div>
 
-  <div ng-if="editMode && (!options.singleWidgetMode || !column.widgets.length) && !column.rows" class="text-center js-remove" ng-class="{'empty-placeholder': options.singleWidgetMode && !column.widgets.length}">
+  <div ng-if="editMode && !column.rows"
+       class="text-center js-remove">
     <a href="" title="add new widget" ng-click="addWidgetDialog()">
       <i class="fa fa-plus fa-5x"></i>
       <p>Add widget</p>

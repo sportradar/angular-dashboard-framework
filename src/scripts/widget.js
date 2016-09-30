@@ -37,8 +37,6 @@ angular.module('adf')
             definition.title = w.title;
           }
 
-          definition.minSize = w.minSize;
-
           //if (!definition.titleTemplateUrl) {
           //  definition.titleTemplateUrl = adfTemplatePath + 'widget-title.html';
           //  if (w.titleTemplateUrl) {
@@ -102,9 +100,6 @@ angular.module('adf')
             $scope.widgetState.isCollapsed= (w.collapsed === true) ? w.collapsed : false;
             $scope.widgetState.configBeingEdited = false;
           }
-
-          $scope.widgetState.isValidWidth = !w.minSize || $scope.col.width >= w.minSize;
-
         } else {
           $log.warn('could not find widget ' + definition.type);
         }
@@ -300,13 +295,6 @@ angular.module('adf')
 
           if(definition.styleClass) {
             classes.push(definition.styleClass);
-          }
-
-          //if (!w.frameless || $scope.editMode){
-          //  classes += ' panel panel-default';
-          //}
-          if (!widgetState.isValidWidth) {
-            classes.push('widgets-warning');
           }
 
           if (widgetState.configBeingEdited) {

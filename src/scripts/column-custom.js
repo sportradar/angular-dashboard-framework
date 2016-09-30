@@ -35,15 +35,6 @@ angular.module('adf')
         isExpanded: false
       };
 
-      var allowPutWidgetIntoColumn = function (widget, sourceColumn) {
-        if ($scope.column === sourceColumn || !$scope.options.singleWidgetMode) {return true;}
-
-        var allowPutWidget = !widget || !widget.minSize || $scope.column.width >= widget.minSize;
-        var columnHasWidgets = $scope.column.widgets.length ? false : true;
-
-        return columnHasWidgets && allowPutWidget;
-      };
-
       $scope.addWidgetDialog = function () {
         $scope.$emit('addWidgetDialog', $scope.column);
       };
@@ -57,17 +48,12 @@ angular.module('adf')
       if (!angular.isDefined($scope.column.rows)) {
         $scope.sortableConfig = {
           group: {
-            name: 'widgets',
-            put: true
+            name: 'widgets'
           },
           handle: '.adf-move',
           ghostClass: 'placeholder',
           animation: 150,
-          onStart: function (evt) {
-            $rootScope.$broadcast('widgetMoveStart', evt.model, $scope.column);
-          },
           onEnd: function () {
-            $rootScope.$broadcast('widgetMoveEnd');
             $scope.$emit('dashboardWidgetChanged');
           },
           onAdd: function () {
@@ -80,14 +66,6 @@ angular.module('adf')
             $rootScope.$broadcast('adfWidgetMovedInColumn');
           }
         };
-
-        $scope.$on('widgetMoveStart', function (evt, widget, sourceColumn) {
-          $scope.sortableConfig.group.put = allowPutWidgetIntoColumn(widget, sourceColumn);
-        });
-
-        $scope.$on('widgetMoveEnd', function () {
-          $scope.sortableConfig.group.put = true;
-        });
       }
     }
 
