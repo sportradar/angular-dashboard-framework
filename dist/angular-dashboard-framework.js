@@ -29,7 +29,7 @@ angular.module('adf', ['adf.provider', 'ui.bootstrap'])
   .value('adfTemplatePath', '../src/templates/')
   .value('rowTemplate', '<adf-dashboard-row row="row" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="row in column.rows track by $index" />')
   .value('columnTemplate', '<adf-dashboard-column-custom column="column" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="column in row.columns track by $index" />')
-  .value('adfVersion', '0.12.0-SNAPSHOT');
+  .value('adfVersion', '0.15.9');
 
 /*
  * The MIT License
@@ -61,6 +61,7 @@ angular.module('adf')
   .directive('adfDashboardColumnCustom', ["$log", "$compile", "$rootScope", "adfTemplatePath", "rowTemplate", "dashboard", function ($log, $compile, $rootScope, adfTemplatePath, rowTemplate, dashboard) {
     
 
+    columnCustomController.$inject = ["$scope"];
     function columnCustomController($scope) {
 
       $scope.columnState = {
@@ -101,7 +102,6 @@ angular.module('adf')
         };
       }
     }
-    columnCustomController.$inject = ["$scope"];
 
     return {
       restrict: 'E',
@@ -1503,7 +1503,7 @@ angular.module('adf')
               definition.config = {};
             }
             if(!definition.config[configIdx]) {
-              definition.config[configIdx] = w.config[configIdx];
+              definition.config[configIdx] = angular.copy(w.config[configIdx]);
             }
           }
 

@@ -71,7 +71,7 @@ angular.module('adf')
               definition.config = {};
             }
             if(!definition.config[configIdx]) {
-              definition.config[configIdx] = w.config[configIdx];
+              definition.config[configIdx] = angular.copy(w.config[configIdx]);
             }
           }
 
