@@ -263,8 +263,8 @@ angular.module('adf')
           }
         });
 
-        $scope.$on('widgetConfigUpdated', function() {
-          $scope.$emit('dashboardWidgetConfigUpdated', $scope.config, $scope.definition.wid, $scope.col.cid);
+        $scope.$on('widgetConfigUpdated', function(event, config) {
+          $scope.$emit('dashboardWidgetConfigUpdated', config, $scope.definition.wid, $scope.col.cid);
         });
 
         $scope.$on('adfWidgetConfigChanged', function(event, id){

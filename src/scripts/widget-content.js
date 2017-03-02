@@ -162,7 +162,7 @@ angular.module('adf')
         };
         $scope.onUpdateConfig = function(config){
           $scope.model.config = config;
-          $scope.$emit('widgetConfigUpdated');
+          $scope.$emit('widgetConfigUpdated', config);
         };
       }
     };
