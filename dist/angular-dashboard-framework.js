@@ -29,7 +29,7 @@ angular.module('adf', ['adf.provider', 'ui.bootstrap'])
   .value('adfTemplatePath', '../src/templates/')
   .value('rowTemplate', '<adf-dashboard-row row="row" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="row in column.rows track by $index" />')
   .value('columnTemplate', '<adf-dashboard-column-custom column="column" adf-model="adfModel" options="options" edit-mode="editMode" ng-repeat="column in row.columns track by $index" />')
-  .value('adfVersion', '0.15.10');
+  .value('adfVersion', '0.15.11');
 
 /*
  * The MIT License
@@ -1696,7 +1696,9 @@ angular.module('adf')
         });
 
         $scope.$on('widgetConfigUpdated', function(event, config) {
-          $scope.$emit('dashboardWidgetConfigUpdated', config, $scope.definition.wid, $scope.col.cid);
+          var updatedConfig =  config ? config : $scope.config;
+
+          $scope.$emit('dashboardWidgetConfigUpdated', updatedConfig, $scope.definition.wid, $scope.col.cid);
         });
 
         $scope.$on('adfWidgetConfigChanged', function(event, id){

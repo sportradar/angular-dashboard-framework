@@ -264,7 +264,9 @@ angular.module('adf')
         });
 
         $scope.$on('widgetConfigUpdated', function(event, config) {
-          $scope.$emit('dashboardWidgetConfigUpdated', config, $scope.definition.wid, $scope.col.cid);
+          var updatedConfig =  config ? config : $scope.config;
+
+          $scope.$emit('dashboardWidgetConfigUpdated', updatedConfig, $scope.definition.wid, $scope.col.cid);
         });
 
         $scope.$on('adfWidgetConfigChanged', function(event, id){
