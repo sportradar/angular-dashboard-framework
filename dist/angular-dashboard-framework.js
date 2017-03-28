@@ -1696,7 +1696,7 @@ angular.module('adf')
         });
 
         $scope.$on('widgetConfigUpdated', function(event, config) {
-          var updatedConfig =  config ? config : $scope.config;
+          var updatedConfig = config ? config : $scope.config;
 
           $scope.$emit('dashboardWidgetConfigUpdated', updatedConfig, $scope.definition.wid, $scope.col.cid);
         });
